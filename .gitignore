@@ -46,3 +46,8 @@ decoder_flame.svg
 *.onnx
 debug.*.png
 test-clis-*/
+
+openpifpaf/tmp
+openpifpaf/pretrained
+.idea/
+openpifpaf/tmp/

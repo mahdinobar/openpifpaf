@@ -89,7 +89,7 @@ def factory(
         if checkpoint == 'resnet101':
             raise Exception('this pretrained model is currently not available')
         checkpoint = CHECKPOINT_URLS.get(checkpoint, checkpoint)
-
+        # downloads pretrained model
         if checkpoint.startswith('http'):
             checkpoint = torch.hub.load_state_dict_from_url(
                 checkpoint,

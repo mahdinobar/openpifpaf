@@ -33,7 +33,7 @@ def cli():
                         help='glob expression for input images (for many images)')
     parser.add_argument('--show', default=False, action='store_true',
                         help='show image of output overlay')
-    parser.add_argument('--image-output', default=None, nargs='?', const=True,
+    parser.add_argument('--image-output', nargs='?', const=True,
                         help='image output file or directory')
     parser.add_argument('--json-output', default=None, nargs='?', const=True,
                         help='json output file or directory')
