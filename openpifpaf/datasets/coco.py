@@ -125,6 +125,7 @@ class Coco(torch.utils.data.Dataset):
         return weights
 
     def __getitem__(self, index):
+        print('********** __getitem__ index now is = ', index)
         image_id = self.ids[index]
         ann_ids = self.coco.getAnnIds(imgIds=image_id, catIds=self.category_ids)
         anns = self.coco.loadAnns(ann_ids)
