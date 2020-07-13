@@ -278,15 +278,15 @@ def draw_skeletons(pose):
 
     ann = Annotation(keypoints=COCO_KEYPOINTS, skeleton=COCO_PERSON_SKELETON)
     ann.set(pose, np.array(COCO_PERSON_SIGMAS) * scale)
-    draw_ann(ann, filename='docs/skeleton_coco.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/skeleton_coco.png', keypoint_painter=keypoint_painter)
 
     ann = Annotation(keypoints=COCO_KEYPOINTS, skeleton=KINEMATIC_TREE_SKELETON)
     ann.set(pose, np.array(COCO_PERSON_SIGMAS) * scale)
-    draw_ann(ann, filename='docs/skeleton_kinematic_tree.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/skeleton_kinematic_tree.png', keypoint_painter=keypoint_painter)
 
     ann = Annotation(keypoints=COCO_KEYPOINTS, skeleton=DENSER_COCO_PERSON_SKELETON)
     ann.set(pose, np.array(COCO_PERSON_SIGMAS) * scale)
-    draw_ann(ann, filename='docs/skeleton_dense.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/skeleton_dense.png', keypoint_painter=keypoint_painter)
 
 
 def print_associations():

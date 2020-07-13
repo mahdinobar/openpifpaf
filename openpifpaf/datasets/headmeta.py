@@ -9,6 +9,16 @@ from .constants import (
     KINEMATIC_TREE_SKELETON,
 )
 
+# from .freihand_constants import (
+#     FREIHAND_CATEGORIES,
+#     FREIHAND_KEYPOINTS,
+#     FREIHAND_HAND_SKELETON,
+#     COCO_PERSON_SIGMAS,
+#     COCO_UPRIGHT_POSE,
+#     DENSER_COCO_PERSON_CONNECTIONS,
+#     KINEMATIC_TREE_SKELETON,
+# )
+
 
 def factory(head_names):
     if head_names is None:

@@ -5,12 +5,17 @@ from .collate import collate_images_targets_meta
 from .constants import COCO_KEYPOINTS, HFLIP
 from .. import transforms
 
+from .freihand import Freihand
+
+
 COCOKP_ANNOTATIONS_TRAIN = 'data-mscoco/annotations/person_keypoints_train2017.json'
 COCOKP_ANNOTATIONS_VAL = 'data-mscoco/annotations/person_keypoints_val2017.json'
 COCODET_ANNOTATIONS_TRAIN = 'data-mscoco/annotations/instances_train2017.json'
 COCODET_ANNOTATIONS_VAL = 'data-mscoco/annotations/instances_val2017.json'
 COCO_IMAGE_DIR_TRAIN = 'data-mscoco/images/train2017/'
 COCO_IMAGE_DIR_VAL = 'data-mscoco/images/val2017/'
+
+FREIHAND_IMAGE_DIR_TRAIN = 'Freihand_pub_v2/'
 
 
 def train_cli(parser):
@@ -30,7 +35,6 @@ def train_cli(parser):
                        help='number of workers for data loading')
     group.add_argument('--batch-size', default=8, type=int,
                        help='batch size')
-
     group_aug = parser.add_argument_group('augmentations')
     group_aug.add_argument('--square-edge', default=385, type=int,
                            help='square edge of input images')
@@ -41,6 +45,8 @@ def train_cli(parser):
     group_aug.add_argument('--no-augmentation', dest='augmentation',
                            default=True, action='store_false',
                            help='do not apply data augmentation')
+
+    group.add_argument('--freihand-train-image-dir', default=FREIHAND_IMAGE_DIR_TRAIN)
 
 
 def train_configure(_):
@@ -232,15 +238,9 @@ def train_freihand_factory(args, target_transforms):
     if args.loader_workers is None:
         args.loader_workers = args.batch_size
 
-    train_data = Coco(
-        image_dir=args.coco_train_image_dir,
-        ann_file=args.cocokp_train_annotations,
-        preprocess=preprocess,
-        target_transforms=target_transforms,
-        n_images=args.n_images,
-        image_filter='keypoint-annotations',
-        category_ids=[1],
-    )
+    train_data = Freihand(image_dir=args.freihand_train_image_dir, mode='training', preprocess=preprocess,
+        target_transforms=target_transforms)
+
     if args.duplicate_data:
         train_data = torch.utils.data.ConcatDataset(
             [train_data for _ in range(args.duplicate_data)])
@@ -249,15 +249,9 @@ def train_freihand_factory(args, target_transforms):
         pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,
         collate_fn=collate_images_targets_meta)
 
-    val_data = Coco(
-        image_dir=args.coco_val_image_dir,
-        ann_file=args.cocokp_val_annotations,
-        preprocess=preprocess,
-        target_transforms=target_transforms,
-        n_images=args.n_images,
-        image_filter='keypoint-annotations',
-        category_ids=[1],
-    )
+    val_data = Freihand(image_dir=args.freihand_train_image_dir, mode='evaluation', preprocess=preprocess,
+        target_transforms=target_transforms)
+
     if args.duplicate_data:
         val_data = torch.utils.data.ConcatDataset(
             [val_data for _ in range(args.duplicate_data)])

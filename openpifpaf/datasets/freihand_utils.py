@@ -169,10 +169,10 @@ class sample_version:
 
 def read_img(idx, base_path, set_name, version=None):
     if version is None:
-        version = sample_version.gs
+        raise ('freihand background version not defined!')
 
-    if set_name == 'evaluation':
-        assert version == sample_version.gs, 'This the only valid choice for samples from the evaluation split.'
+    # if set_name == 'evaluation':
+    #     assert version == sample_version.gs, 'This the only valid choice for samples from the evaluation split.'
 
     img_rgb_path = os.path.join(base_path, set_name, 'rgb',
                                 '%08d.jpg' % sample_version.map_id(idx, version))
