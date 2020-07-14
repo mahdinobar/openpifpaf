@@ -9,21 +9,22 @@ from .constants import (
     KINEMATIC_TREE_SKELETON,
 )
 
-# from .freihand_constants import (
-#     FREIHAND_CATEGORIES,
-#     FREIHAND_KEYPOINTS,
-#     FREIHAND_HAND_SKELETON,
-#     COCO_PERSON_SIGMAS,
-#     COCO_UPRIGHT_POSE,
-#     DENSER_COCO_PERSON_CONNECTIONS,
-#     KINEMATIC_TREE_SKELETON,
-# )
+from .freihand_constants import (
+    FREIHAND_CATEGORIES,
+    FREIHAND_KEYPOINTS,
+    FREIHAND_HAND_SKELETON,
+    FREIHAND_HAND_SIGMAS,
+    FREIHAND_UPRIGHT_POSE,
+    DENSER_FREIHAND_HAND_CONNECTIONS,
+    FREIHAND_KINEMATIC_TREE_SKELETON,
+)
 
 
 def factory(head_names):
     if head_names is None:
         return None
-    return [factory_single(hn) for hn in head_names]
+    # return [factory_single(hn) for hn in head_names]
+    return [factory_single_freihand(hn) for hn in head_names]
 
 
 def factory_single(head_name):
@@ -55,4 +56,36 @@ def factory_single(head_name):
                                COCO_PERSON_SIGMAS,
                                COCO_UPRIGHT_POSE,
                                COCO_PERSON_SKELETON)
+    raise NotImplementedError
+
+
+def factory_single_freihand(head_name):
+    if 'cifdet' in head_name:
+        return DetectionMeta(head_name, FREIHAND_CATEGORIES)
+    if 'pif' in head_name or 'cif' in head_name:
+        return IntensityMeta(head_name,
+                             FREIHAND_KEYPOINTS,
+                             FREIHAND_HAND_SIGMAS,
+                             FREIHAND_UPRIGHT_POSE,
+                             FREIHAND_HAND_SKELETON)
+    if 'caf25' in head_name:
+        return AssociationMeta(head_name,
+                               FREIHAND_KEYPOINTS,
+                               FREIHAND_HAND_SIGMAS,
+                               FREIHAND_UPRIGHT_POSE,
+                               DENSER_FREIHAND_HAND_CONNECTIONS,
+                               sparse_skeleton=FREIHAND_HAND_SKELETON,
+                               only_in_field_of_view=True)
+    if 'caf16' in head_name:
+        return AssociationMeta(head_name,
+                               FREIHAND_KEYPOINTS,
+                               FREIHAND_HAND_SIGMAS,
+                               FREIHAND_UPRIGHT_POSE,
+                               FREIHAND_KINEMATIC_TREE_SKELETON)
+    if head_name == 'caf':
+        return AssociationMeta(head_name,
+                               FREIHAND_KEYPOINTS,
+                               FREIHAND_HAND_SIGMAS,
+                               FREIHAND_UPRIGHT_POSE,
+                               FREIHAND_HAND_SKELETON)
     raise NotImplementedError
