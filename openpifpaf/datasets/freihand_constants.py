@@ -166,7 +166,7 @@ def draw_skeletons(pose):
     ann.set(pose, np.array(FREIHAND_HAND_SIGMAS) * scale)
     draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/freihand_references/skeleton_freihand.png', keypoint_painter=keypoint_painter)
 
-    ann = Annotation(keypoints=FREIHAND_KEYPOINTS, skeleton=KINEMATIC_TREE_SKELETON)
+    ann = Annotation(keypoints=FREIHAND_KEYPOINTS, skeleton=FREIHAND_KINEMATIC_TREE_SKELETON)
     ann.set(pose, np.array(FREIHAND_HAND_SIGMAS) * scale)
     draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/freihand_references/skeleton_kinematic_tree_freihand.png', keypoint_painter=keypoint_painter)
 
