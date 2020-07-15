@@ -34,7 +34,7 @@ class Freihand(torch.utils.data.Dataset):
 
 
     def __getitem__(self, index):
-        print('********** __getitem__ index now is = ', index)
+        # print('********** __getitem__ index now is = ', index)
         if self.mode == 'training':
             if index//self.number_unique_imgs == 0:
                 version = sample_version.gs # green background

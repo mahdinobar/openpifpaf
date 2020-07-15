@@ -44,7 +44,6 @@ class CifCaf(Generator):
             nms = nms_module.Keypoints()
 
         self.field_config = field_config
-
         self.keypoints = keypoints
         self.skeleton = skeleton
         self.skeleton_m1 = np.asarray(skeleton) - 1

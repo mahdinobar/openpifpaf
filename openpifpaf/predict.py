@@ -205,3 +205,30 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# environment argument to test coco pretraineds
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_input/6039458188_be74b036c8_c.jpg
+# --checkpoint
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/outputs/shufflenetv2k30w-200510-104256-cif-caf-caf25-o10s-0b5ba06f.pkl
+# --image-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
+# --json-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
+# --debug
+
+# environment argument to test freihand pretraineds
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/training/rgb/00130239.jpg
+# --checkpoint
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/outputs/shufflenetv2k16w-200714-213611-cif-caf-caf25-9cf351e2.pkl
+# --image-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
+# --json-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
+# --debug
+
+# uncomment to debug with Pycharm
+# --loader-workers=0
+# too coarse just to see some results
+# --seed-threshold=1e-3
+# --keypoint-threshold=1e-3
+# --instance-threshold=1e-3
