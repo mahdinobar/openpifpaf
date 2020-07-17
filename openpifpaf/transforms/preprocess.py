@@ -71,7 +71,7 @@ class Preprocess(metaclass=ABCMeta):
                 ann.data[:, 0] = -ann.data[:, 0] + (w - 1)
                 if meta.get('horizontal_swap'):
                     ann.data[:] = meta['horizontal_swap'](ann.data)
-
+            # -ann.data[:, 0] + meta['width_height'][0] - 1
             for _, __, c1, c2 in ann.decoding_order:
                 c1[:2] += meta['offset']
                 c2[:2] += meta['offset']

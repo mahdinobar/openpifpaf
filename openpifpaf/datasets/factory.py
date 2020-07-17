@@ -6,6 +6,8 @@ from .constants import COCO_KEYPOINTS, HFLIP
 from .. import transforms
 
 from .freihand import Freihand
+from .freihand_constants import FREIHAND_KEYPOINTS, FREIHAND_HFLIP
+
 
 
 COCOKP_ANNOTATIONS_TRAIN = 'data-mscoco/annotations/person_keypoints_train2017.json'
@@ -125,7 +127,7 @@ def train_freihand_preprocess_factory(
     return transforms.Compose([
         transforms.NormalizeAnnotations(),
         transforms.AnnotationJitter(),
-        transforms.RandomApply(transforms.HFlip(COCO_KEYPOINTS, HFLIP), 0.5),
+        transforms.RandomApply(transforms.HFlip(FREIHAND_KEYPOINTS, FREIHAND_HFLIP), 0.5),
         rescale_t,
         transforms.Crop(square_edge, use_area_of_interest=True),
         transforms.CenterPad(square_edge),

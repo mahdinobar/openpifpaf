@@ -51,4 +51,11 @@ class HFlip(Preprocess):
 
         meta['valid_area'][0] = -(meta['valid_area'][0] + meta['valid_area'][2]) + w
 
+        # # uncomment to check flip is working correctly wrt gt
+        # import matplotlib.pyplot as plt
+        # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+        # ax.imshow(np.asarray(image), cmap='magma')
+        # ax.scatter(anns[0]['keypoints'][:,0], anns[0]['keypoints'][:,1])
+        # plt.show()
+
         return image, anns, meta

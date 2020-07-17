@@ -61,23 +61,27 @@ FREIHAND_UPRIGHT_POSE = np.array([
 ])
 
 
-HFLIP = {
-    'left_eye': 'right_eye',
-    'right_eye': 'left_eye',
-    'left_ear': 'right_ear',
-    'right_ear': 'left_ear',
-    'left_shoulder': 'right_shoulder',
-    'right_shoulder': 'left_shoulder',
-    'left_elbow': 'right_elbow',
-    'right_elbow': 'left_elbow',
-    'left_wrist': 'right_wrist',
-    'right_wrist': 'left_wrist',
-    'left_hip': 'right_hip',
-    'right_hip': 'left_hip',
-    'left_knee': 'right_knee',
-    'right_knee': 'left_knee',
-    'left_ankle': 'right_ankle',
-    'right_ankle': 'left_ankle',
+FREIHAND_HFLIP = {
+     'thumb_mcp': 'little_mcp',
+     'thumb_pip': 'little_pip',
+     'thumb_dip': 'little_dip',
+     'thumb_tip': 'little_tip',
+     'index_mcp': 'ring_mcp',
+     'index_pip': 'ring_pip',
+     'index_dip': 'ring_dip',
+     'index_tip': 'ring_tip',
+     'middle_mcp': 'middle_mcp',
+     'middle_pip': 'middle_pip',
+     'middle_dip': 'middle_dip',
+     'middle_tip': 'middle_tip',
+     'ring_mcp': 'index_mcp',
+     'ring_pip': 'index_pip',
+     'ring_dip': 'index_dip',
+     'ring_tip': 'index_tip',
+     'little_mcp': 'thumb_mcp',
+     'little_pip': 'thumb_pip',
+     'little_dip': 'thumb_dip',
+     'little_tip': 'thumb_tip',
 }
 
 
