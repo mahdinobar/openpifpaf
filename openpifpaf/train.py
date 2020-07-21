@@ -178,8 +178,8 @@ if __name__ == '__main__':
 # --lr=0.025
 # --epochs=150
 # --lr-decay
-# 180
-# 190
+# 110
+# 130
 # --lr-decay-epochs=10
 # --batch-size=16
 # --auto-tune-mtl
@@ -207,3 +207,4 @@ if __name__ == '__main__':
 # --dataset=freihand
 # --square-edge=200
 # --no-multi-scale-hflip
+

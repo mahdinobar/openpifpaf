@@ -59,7 +59,8 @@ class Freihand(torch.utils.data.Dataset):
         meta = None
 
         img = Image.fromarray(img.astype('uint8'), 'RGB')
-        anns = [{'keypoints': np.hstack((uv, np.ones((uv.shape[0], 1))))}]
+        visibility_flag = 2 # 0 not labeled and not visible, 1 labeled but not visible and 2 means labeled and visible
+        anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
         anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         anns[0].update({'iscrowd': 0})
         # preprocess image and annotations

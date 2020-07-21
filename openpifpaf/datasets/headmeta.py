@@ -23,7 +23,9 @@ from .freihand_constants import (
 def factory(head_names):
     if head_names is None:
         return None
+    # # uncomment for coco dataset
     # return [factory_single(hn) for hn in head_names]
+    # uncomment for freihand dataset
     return [factory_single_freihand(hn) for hn in head_names]
 
 
