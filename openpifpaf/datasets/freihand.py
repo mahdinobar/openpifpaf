@@ -1,8 +1,9 @@
 import logging
 import torch.utils.data
 from .freihand_utils import *
-from .. import transforms
 from PIL import Image
+from .. import transforms, utils
+
 
 
 
@@ -63,13 +64,26 @@ class Freihand(torch.utils.data.Dataset):
         anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
         anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         anns[0].update({'iscrowd': 0})
+
         # preprocess image and annotations
         img, anns, meta = self.preprocess(img, anns, meta)
+
+        # mask valid TODO still necessary?
+        valid_area = meta['valid_area']
+        utils.mask_valid_area(img, valid_area)
+        LOG.debug(meta)
+
+        # log stats
+        for ann in anns:
+            if getattr(ann, 'iscrowd', False):
+                continue
+            if not np.any(ann['keypoints'][:, 2] > 0.0):
+                continue
+            STAT_LOG.debug({'bbox': [int(v) for v in ann['bbox']]})
 
         # transform targets
         if self.target_transforms is not None:
             anns = [t(img, anns, meta) for t in self.target_transforms]
-
 
         return img, anns, meta
 

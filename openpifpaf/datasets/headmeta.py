@@ -19,6 +19,16 @@ from .freihand_constants import (
     FREIHAND_KINEMATIC_TREE_SKELETON,
 )
 
+from .rhd_constants import (
+    RHD_CATEGORIES,
+    RHD_KEYPOINTS,
+    RHD_HAND_SKELETON,
+    RHD_HAND_SIGMAS,
+    RHD_UPRIGHT_POSE,
+    DENSER_RHD_HAND_CONNECTIONS,
+    RHD_KINEMATIC_TREE_SKELETON,
+)
+
 
 def factory(head_names):
     if head_names is None:
@@ -26,8 +36,9 @@ def factory(head_names):
     # # uncomment for coco dataset
     # return [factory_single(hn) for hn in head_names]
     # uncomment for freihand dataset
-    return [factory_single_freihand(hn) for hn in head_names]
-
+    # return [factory_single_freihand(hn) for hn in head_names]
+    # uncomment for rhd dataset
+    return [factory_single_rhd(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:
@@ -90,4 +101,36 @@ def factory_single_freihand(head_name):
                                FREIHAND_HAND_SIGMAS,
                                FREIHAND_UPRIGHT_POSE,
                                FREIHAND_HAND_SKELETON)
+    raise NotImplementedError
+
+
+def factory_single_rhd(head_name):
+    if 'cifdet' in head_name:
+        return DetectionMeta(head_name, RHD_CATEGORIES)
+    if 'pif' in head_name or 'cif' in head_name:
+        return IntensityMeta(head_name,
+                             RHD_KEYPOINTS,
+                             RHD_HAND_SIGMAS,
+                             RHD_UPRIGHT_POSE,
+                             RHD_HAND_SKELETON)
+    if 'caf25' in head_name:
+        return AssociationMeta(head_name,
+                               RHD_KEYPOINTS,
+                               RHD_HAND_SIGMAS,
+                               RHD_UPRIGHT_POSE,
+                               DENSER_RHD_HAND_CONNECTIONS,
+                               sparse_skeleton=RHD_HAND_SKELETON,
+                               only_in_field_of_view=True)
+    if 'caf16' in head_name:
+        return AssociationMeta(head_name,
+                               RHD_KEYPOINTS,
+                               RHD_HAND_SIGMAS,
+                               RHD_UPRIGHT_POSE,
+                               RHD_KINEMATIC_TREE_SKELETON)
+    if head_name == 'caf':
+        return AssociationMeta(head_name,
+                               RHD_KEYPOINTS,
+                               RHD_HAND_SIGMAS,
+                               RHD_UPRIGHT_POSE,
+                               RHD_HAND_SKELETON)
     raise NotImplementedError

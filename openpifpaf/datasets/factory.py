@@ -8,6 +8,8 @@ from .. import transforms
 from .freihand import Freihand
 from .freihand_constants import FREIHAND_KEYPOINTS, FREIHAND_HFLIP
 
+from .rhd import Rhd
+from .rhd_constants import RHD_KEYPOINTS, RHD_HFLIP
 
 
 COCOKP_ANNOTATIONS_TRAIN = 'data-mscoco/annotations/person_keypoints_train2017.json'
@@ -18,6 +20,8 @@ COCO_IMAGE_DIR_TRAIN = 'data-mscoco/images/train2017/'
 COCO_IMAGE_DIR_VAL = 'data-mscoco/images/val2017/'
 
 FREIHAND_IMAGE_DIR_TRAIN = 'Freihand_pub_v2/'
+RHD_IMAGE_DIR_TRAIN = 'RHD_published_v2/'
+
 
 
 def train_cli(parser):
@@ -49,6 +53,8 @@ def train_cli(parser):
                            help='do not apply data augmentation')
 
     group.add_argument('--freihand-train-image-dir', default=FREIHAND_IMAGE_DIR_TRAIN)
+    group.add_argument('--rhd-train-image-dir', default=RHD_IMAGE_DIR_TRAIN)
+
 
 
 def train_configure(_):
@@ -135,6 +141,45 @@ def train_freihand_preprocess_factory(
         transforms.TRAIN_TRANSFORM,
     ])
 
+def train_rhd_preprocess_factory(
+        *,
+        square_edge,
+        augmentation=True,
+        extended_scale=False,
+        orientation_invariant=0.0,
+        rescale_images=1.0,
+):
+    if not augmentation:
+        return transforms.Compose([
+            transforms.NormalizeAnnotations(),
+            transforms.RescaleAbsolute(square_edge),
+            transforms.CenterPad(square_edge),
+            transforms.EVAL_TRANSFORM,
+        ])
+
+    if extended_scale:
+        rescale_t = transforms.RescaleRelative(
+            scale_range=(0.25 * rescale_images, 2.0 * rescale_images),
+            power_law=True)
+    else:
+        rescale_t = transforms.RescaleRelative(
+            scale_range=(0.4 * rescale_images, 2.0 * rescale_images),
+            power_law=True)
+
+    orientation_t = None
+    if orientation_invariant:
+        orientation_t = transforms.RandomApply(transforms.RotateBy90(), orientation_invariant)
+
+    return transforms.Compose([
+        transforms.NormalizeAnnotations(),
+        transforms.AnnotationJitter(),
+        transforms.RandomApply(transforms.HFlip(RHD_KEYPOINTS, RHD_HFLIP), 0.5),
+        rescale_t,
+        transforms.Crop(square_edge, use_area_of_interest=True),
+        transforms.CenterPad(square_edge),
+        orientation_t,
+        transforms.TRAIN_TRANSFORM,
+    ])
 
 
 def train_cocodet_preprocess_factory(
@@ -264,6 +309,40 @@ def train_freihand_factory(args, target_transforms):
 
     return train_loader, val_loader
 
+def train_rhd_factory(args, target_transforms):
+    preprocess = train_rhd_preprocess_factory(
+        square_edge=args.square_edge,
+        augmentation=args.augmentation,
+        extended_scale=args.extended_scale,
+        orientation_invariant=args.orientation_invariant,
+        rescale_images=args.rescale_images)
+
+    if args.loader_workers is None:
+        args.loader_workers = args.batch_size
+
+    train_data = Rhd(image_dir=args.rhd_train_image_dir, mode='training', preprocess=preprocess,
+        target_transforms=target_transforms)
+
+    if args.duplicate_data:
+        train_data = torch.utils.data.ConcatDataset(
+            [train_data for _ in range(args.duplicate_data)])
+    train_loader = torch.utils.data.DataLoader(
+        train_data, batch_size=args.batch_size, shuffle=not args.debug,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,
+        collate_fn=collate_images_targets_meta)
+
+    val_data = Rhd(image_dir=args.rhd_train_image_dir, mode='evaluation', preprocess=preprocess,
+        target_transforms=target_transforms)
+
+    if args.duplicate_data:
+        val_data = torch.utils.data.ConcatDataset(
+            [val_data for _ in range(args.duplicate_data)])
+    val_loader = torch.utils.data.DataLoader(
+        val_data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,
+        collate_fn=collate_images_targets_meta)
+
+    return train_loader, val_loader
 
 
 
@@ -327,5 +406,7 @@ def train_factory(args, target_transforms):
         return train_cocodet_factory(args, target_transforms)
     if args.dataset in ('freihand',):
         return train_freihand_factory(args, target_transforms)
+    if args.dataset in ('rhd',):
+        return train_rhd_factory(args, target_transforms)
 
     raise Exception('unknown dataset: {}'.format(args.dataset))
