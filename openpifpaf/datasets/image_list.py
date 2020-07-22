@@ -59,6 +59,7 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
         self.mode = mode
         self.number_unique_imgs = db_size('training')
+        # self.number_unique_imgs = 5
         if self.mode == 'evaluation':
             self.number_version = 1
         else:

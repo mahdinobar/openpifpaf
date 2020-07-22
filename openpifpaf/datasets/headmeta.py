@@ -36,9 +36,9 @@ def factory(head_names):
     # # uncomment for coco dataset
     # return [factory_single(hn) for hn in head_names]
     # uncomment for freihand dataset
-    # return [factory_single_freihand(hn) for hn in head_names]
+    return [factory_single_freihand(hn) for hn in head_names]
     # uncomment for rhd dataset
-    return [factory_single_rhd(hn) for hn in head_names]
+    # return [factory_single_rhd(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:

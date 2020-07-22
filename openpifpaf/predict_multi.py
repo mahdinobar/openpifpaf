@@ -8,6 +8,8 @@ import os
 
 import PIL
 import torch
+import numpy as np
+# from progress.bar import Bar
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
 
@@ -166,13 +168,25 @@ def main():
         linewidth=args.line_width,
     )
     annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
+    B = 0
+    b = 0
+    pred_array = []
+    gt_array = []
+    # bar = Bar('Processing', max=data.__len__())
 
-    for batch_i, (image_tensors_batch, _, meta_batch) in enumerate(data_loader):
+    for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
 
+        # B+=1
+        # print ('B={}'.format(B))
         # unbatch
-        for pred, meta in zip(pred_batch, meta_batch):
-            LOG.info('batch %d: %s', batch_i, meta['file_name'])
+        for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
+            b += 1
+            # print('b={}'.format(b))
+            percent_completed=b/data.__len__()*100
+            print('progress = {:.2f}'.format(percent_completed))
+            # bar.next()
+            # LOG.info('batch %d: %s', batch_i, meta['file_name'])
 
             # load the original image if necessary
             cpu_image = None
@@ -184,59 +198,52 @@ def main():
             if preprocess is not None:
                 pred = preprocess.annotations_inverse(pred, meta)
 
-            if args.json_output is not None:
-                json_out_name = out_name(
-                    args.json_output, meta['file_name'], '.predictions.json')
-                LOG.debug('json output = %s', json_out_name)
-                with open(json_out_name, 'w') as f:
-                    json.dump([ann.json_data() for ann in pred], f)
+            # error = pred[0].data - gt[0]['keypoints']
+            try:
+                if pred[0].data.shape==(21,3) and gt[0]['keypoints'].shape==(21,3):
+                    pred_array.append(pred[0].data)
+                    gt_array.append(gt[0]['keypoints'])
+            except:
+                pass
 
-            if args.show or args.image_output is not None:
-                image_out_name = out_name(
-                    args.image_output, meta['file_name'], '.predictions.png')
-                LOG.debug('image output = %s', image_out_name)
-                with show.image_canvas(cpu_image,
-                                       image_out_name,
-                                       show=args.show,
-                                       fig_width=args.figure_width,
-                                       dpi_factor=args.dpi_factor) as ax:
-                    annotation_painter.annotations(ax, pred)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy',pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy', gt_array)
+    # bar.finish()
+            # with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/data.json', 'a') as outfile:
+            #     json.dump([ann.json_data() for ann in pred], outfile, indent=2)
+            # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy',pred_array)
+            # if args.json_output is not None:
+            #     json_out_name = out_name(
+            #         args.json_output, meta['file_name'], '.predictions.json')
+            #     LOG.debug('json output = %s', json_out_name)
+            #     with open(json_out_name, 'w') as f:
+            #         json.dump([ann.json_data() for ann in pred], f)
+            #
+            # if args.show or args.image_output is not None:
+            #     image_out_name = out_name(
+            #         args.image_output, meta['file_name'], '.predictions.png')
+            #     LOG.debug('image output = %s', image_out_name)
+            #     with show.image_canvas(cpu_image,
+            #                            image_out_name,
+            #                            show=args.show,
+            #                            fig_width=args.figure_width,
+            #                            dpi_factor=args.dpi_factor) as ax:
+            #         annotation_painter.annotations(ax, pred)
 
+def PCK_plot():
+    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy')
+    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy')
+
+    threshold = 15
+
+    
+
+
+
+    import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    main()
+    # main()
+    PCK_plot()
 
-# environment argument to test coco pretraineds
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_input/6039458188_be74b036c8_c.jpg
-# --checkpoint
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/outputs/shufflenetv2k30w-200510-104256-cif-caf-caf25-o10s-0b5ba06f.pkl
-# --image-output
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --json-output
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --debug
-
-# environment argument to test freihand pretraineds
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/training/rgb/00130239.jpg
-# --checkpoint
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/outputs/shufflenetv2k16w-200714-213611-cif-caf-caf25-9cf351e2.pkl
-# --image-output
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --json-output
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --debug
-
-# uncomment to debug with Pycharm
-# --loader-workers=0
-# too coarse just to see some results
-# --seed-threshold=1e-3
-# --keypoint-threshold=1e-3
-# --instance-threshold=1e-3
-
-
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_input/00000098.jpg
-# --image-output
-# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052
-# --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
-# --debug
+# time CUDA_VISIBLE_DEVICES=0,1 python3 -m openpifpaf.predict_multi /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/ --image-output /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052  --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --batch-size=16  --long-edge=224
