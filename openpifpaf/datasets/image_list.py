@@ -4,6 +4,8 @@ import torch
 
 from .. import transforms
 
+from .freihand_utils import *
+from PIL import Image
 
 class ImageList(torch.utils.data.Dataset):
     def __init__(self, image_paths, preprocess=None):
@@ -47,3 +49,54 @@ class PilImageList(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+
+class ImageList_Freihand(torch.utils.data.Dataset):
+    def __init__(self, image_dir, mode, preprocess=None):
+        self.image_dir = image_dir
+        self.K_list, self.xyz_list = load_db_annotation(image_dir, 'training')
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        self.mode = mode
+        self.number_unique_imgs = db_size('training')
+        if self.mode == 'evaluation':
+            self.number_version = 1
+        else:
+            raise AssertionError('number_version not defined!')
+
+
+    def __getitem__(self, index):
+        if self.mode == 'evaluation':
+            version = sample_version.auto
+        else:
+            raise AssertionError ('version not defined!')
+        # load image and mask
+        img = read_img(index%self.number_unique_imgs, self.image_dir, 'training', version)
+
+        # annotation for this frame
+        K, xyz = self.K_list[index%self.number_unique_imgs], self.xyz_list[index%self.number_unique_imgs]
+        K, xyz = [np.array(x) for x in [K, xyz]]
+        uv = projectPoints(xyz, K) # 2D gt keypoints
+        meta = None
+
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+        visibility_flag = 2 # 0 not labeled and not visible, 1 labeled but not visible and 2 means labeled and visible
+        anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
+        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        anns[0].update({'iscrowd': 0})
+
+        # preprocess image and annotations
+        img, anns, meta = self.preprocess(img, anns, meta)
+
+        meta.update({
+            'dataset_index': index,
+            'file_name': self.image_dir+'training'+'/rgb/'+'%08d.jpg' % sample_version.map_id(index%self.number_unique_imgs, version),
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return self.number_unique_imgs*self.number_version
+
+
+
