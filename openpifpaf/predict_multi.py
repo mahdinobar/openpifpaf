@@ -10,6 +10,7 @@ import PIL
 import torch
 import numpy as np
 # from progress.bar import Bar
+import matplotlib.pyplot as plt
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
 
@@ -231,16 +232,50 @@ def main():
             #         annotation_painter.annotations(ax, pred)
 
 def PCK_plot():
+    checkpoint_name = 'shufflenetv2k16w-200721-232112-cif-caf-caf25-edge200.pkl.epoch117'
     pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy')
     gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy')
 
-    threshold = 15
 
-    
+    def PCK(PCK_thresh, pred_score_thresh = 0.1, gt_conf_thresh = 0):
+        total_conted_data = 0
+        total_correct_data = 0
+        for data_id in range (0, pred_array.shape[0]):
+            bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (gt_array[data_id, :, 2] > gt_conf_thresh)
+            _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
+            _norms = np.linalg.norm(_errors, axis=1)
+
+            total_correct_data += sum(_norms<PCK_thresh)
+            total_conted_data += _norms.shape[0]
+
+        PCK_value = total_correct_data/total_conted_data
+        return PCK_value
+
+    num_intervals = 100
+    max_error = 30
+    PCK_thresh = np.linspace(0, max_error, num_intervals)
+    # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
 
 
+    y=[]
+    for iter in range(0,num_intervals):
+        PCK_value = PCK(PCK_thresh[iter])
+        y.append(PCK_value)
+        print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value, iter/num_intervals*100))
 
-    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
+    axes.set_xlabel('Error Thresholds [px]')
+    axes.set_ylabel('2D PCK')
+    axes.set_title('2D PCK vs error threshold in pixels')
+    axes.grid(True)
+    axes.set_ylim([0, 1])
+    axes.set_xlim([0, max_error])
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/2DPCK_{}.png'.format(checkpoint_name), format='png')
+    plt.show()
+
+
 
 if __name__ == '__main__':
     # main()
