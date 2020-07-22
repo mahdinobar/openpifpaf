@@ -6,6 +6,8 @@ from .. import transforms
 
 from .freihand_utils import *
 from PIL import Image
+import pickle
+
 
 class ImageList(torch.utils.data.Dataset):
     def __init__(self, image_paths, preprocess=None):
@@ -100,4 +102,39 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         return self.number_unique_imgs*self.number_version
 
 
+class ImageList_RHD(torch.utils.data.Dataset):
+    def __init__(self, image_dir, mode, preprocess=None):
+        self.image_dir = image_dir
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        if mode == 'evaluation':
+            self.mode = mode  # 'evaluation' or 'training'
+        else:
+            raise AssertionError('for prediction, mode must be evaluation!')
+        # load all annotations of this mode
+        with open(os.path.join(self.image_dir, self.mode, 'anno_%s.pickle' % self.mode), 'rb') as fi:
+            self.anno_all = pickle.load(fi)
 
+    def __getitem__(self, index):
+        # load image
+        with open(os.path.join(self.image_dir, self.mode, 'color', '%.5d.png' % index), 'rb') as f:
+            img = Image.open(f).convert('RGB')
+
+        # annotation for this frame
+        anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]
+        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        anns[0].update({'iscrowd': 0})
+
+        meta = None
+
+        # preprocess image and annotations
+        img, anns, meta = self.preprocess(img, anns, meta)
+
+        meta.update({
+            'dataset_index': index,
+            'file_name': (self.image_dir + '/' + self.mode + '/color/' + '%.5d.png' % index),
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return len(self.anno_all)

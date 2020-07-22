@@ -9,7 +9,6 @@ import os
 import PIL
 import torch
 import numpy as np
-# from progress.bar import Bar
 import matplotlib.pyplot as plt
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
@@ -150,7 +149,7 @@ def out_name(arg, in_name, default_extension):
     return arg
 
 
-def main():
+def freihand_multi_predict():
     args = cli()
 
     processor, model = processor_factory(args)
@@ -173,13 +172,10 @@ def main():
     b = 0
     pred_array = []
     gt_array = []
-    # bar = Bar('Processing', max=data.__len__())
 
     for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
 
-        # B+=1
-        # print ('B={}'.format(B))
         # unbatch
         for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
             b += 1
@@ -187,7 +183,7 @@ def main():
             percent_completed=b/data.__len__()*100
             print('progress = {:.2f}'.format(percent_completed))
             # bar.next()
-            # LOG.info('batch %d: %s', batch_i, meta['file_name'])
+            LOG.info('batch %d: %s', batch_i, meta['file_name'])
 
             # load the original image if necessary
             cpu_image = None
@@ -209,32 +205,13 @@ def main():
 
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy',pred_array)
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy', gt_array)
-    # bar.finish()
-            # with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/data.json', 'a') as outfile:
-            #     json.dump([ann.json_data() for ann in pred], outfile, indent=2)
-            # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy',pred_array)
-            # if args.json_output is not None:
-            #     json_out_name = out_name(
-            #         args.json_output, meta['file_name'], '.predictions.json')
-            #     LOG.debug('json output = %s', json_out_name)
-            #     with open(json_out_name, 'w') as f:
-            #         json.dump([ann.json_data() for ann in pred], f)
-            #
-            # if args.show or args.image_output is not None:
-            #     image_out_name = out_name(
-            #         args.image_output, meta['file_name'], '.predictions.png')
-            #     LOG.debug('image output = %s', image_out_name)
-            #     with show.image_canvas(cpu_image,
-            #                            image_out_name,
-            #                            show=args.show,
-            #                            fig_width=args.figure_width,
-            #                            dpi_factor=args.dpi_factor) as ax:
-            #         annotation_painter.annotations(ax, pred)
+
 
 def PCK_plot():
-    checkpoint_name = 'shufflenetv2k16w-200721-232112-cif-caf-caf25-edge200.pkl.epoch117'
-    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy')
-    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy')
+    checkpoint_name = 'shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd'
+    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy')
+    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy')
+
 
 
     def PCK(PCK_thresh, pred_score_thresh = 0.1, gt_conf_thresh = 0):
@@ -275,10 +252,66 @@ def PCK_plot():
     plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/2DPCK_{}.png'.format(checkpoint_name), format='png')
     plt.show()
 
+def rhd_multi_predict():
+    args = cli()
+
+    processor, model = processor_factory(args)
+    preprocess = preprocess_factory(args)
+
+    # data
+    data = datasets.ImageList_RHD(args.images[0], mode='evaluation', preprocess=preprocess)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers,
+        collate_fn=datasets.collate_images_anns_meta)
+
+    # visualizers
+    keypoint_painter = show.KeypointPainter(
+        color_connections=not args.monocolor_connections,
+        linewidth=args.line_width,
+    )
+    annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
+    b = 0
+    pred_array = []
+    gt_array = []
+
+    for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
+        pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
+
+        # unbatch
+        for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
+            b += 1
+            # print('b={}'.format(b))
+            percent_completed=b/data.__len__()*100
+            print('progress = {:.2f}'.format(percent_completed))
+            # bar.next()
+            LOG.info('batch %d: %s', batch_i, meta['file_name'])
+
+            # load the original image if necessary
+            cpu_image = None
+            if args.debug or args.show or args.image_output is not None:
+                with open(meta['file_name'], 'rb') as f:
+                    cpu_image = PIL.Image.open(f).convert('RGB')
+
+            visualizer.BaseVisualizer.image(cpu_image)
+            if preprocess is not None:
+                pred = preprocess.annotations_inverse(pred, meta)
+
+            # error = pred[0].data - gt[0]['keypoints']
+            try:
+                if pred[0].data.shape==(42,3) and gt[0]['keypoints'].shape==(42,3):
+                    pred_array.append(pred[0].data)
+                    gt_array.append(gt[0]['keypoints'])
+            except:
+                pass
+
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy',pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy', gt_array)
 
 
 if __name__ == '__main__':
-    # main()
+    # freihand_multi_predict
+    # rhd_multi_predict()
     PCK_plot()
 
 # time CUDA_VISIBLE_DEVICES=0,1 python3 -m openpifpaf.predict_multi /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/ --image-output /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052  --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --batch-size=16  --long-edge=224
