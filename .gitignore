@@ -47,9 +47,9 @@ decoder_flame.svg
 debug.*.png
 test-clis-*/
 
-openpifpaf/tmp
+openpifpaf/results
 openpifpaf/pretrained
 .idea/
-openpifpaf/tmp/
+openpifpaf/results/
 
 openpifpaf/outputs

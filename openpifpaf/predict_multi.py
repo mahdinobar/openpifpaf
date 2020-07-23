@@ -203,14 +203,15 @@ def freihand_multi_predict():
             except:
                 pass
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array.npy',pred_array)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array.npy', gt_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/pred_array.npy', pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/gt_array.npy', gt_array)
 
 
 def PCK_plot():
-    checkpoint_name = 'shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd'
-    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy')
-    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy')
+    checkpoint_name = 'shufflenetv2k16w-200723-003131-cif-caf-caf25-edge280.pkl.epoch118'
+    eval_dataset = 'rhd'
+    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(eval_dataset, checkpoint_name))
+    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset, checkpoint_name))
 
 
 
@@ -221,6 +222,10 @@ def PCK_plot():
             bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (gt_array[data_id, :, 2] > gt_conf_thresh)
             _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
             _norms = np.linalg.norm(_errors, axis=1)
+            if sum(_norms<PCK_thresh)==0:
+                print('data_id=',data_id)
+                print('np.argwhere(pred_array[data_id, :, 2]==0)=',np.argwhere(pred_array[data_id, :, 2]==0))
+                print('np.argwhere(gt_array[data_id, :, 2]==0)=',np.argwhere(gt_array[data_id, :, 2]==0))
 
             total_correct_data += sum(_norms<PCK_thresh)
             total_conted_data += _norms.shape[0]
@@ -229,7 +234,7 @@ def PCK_plot():
         return PCK_value
 
     num_intervals = 100
-    max_error = 30
+    max_error = 300
     PCK_thresh = np.linspace(0, max_error, num_intervals)
     # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
 
@@ -240,19 +245,33 @@ def PCK_plot():
         y.append(PCK_value)
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value, iter/num_intervals*100))
 
+    # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+
+
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
+    # handPifPaf_paper_2DPCK_PXLs_freihand = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name))
+    # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
+    # y = handPifPaf_paper_2DPCK_PXLs_freihand[1, :]
 
     fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
     axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
+    # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='g')
+    # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='m')
+    # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
     axes.set_xlabel('Error Thresholds [px]')
     axes.set_ylabel('2D PCK')
     axes.set_title('2D PCK vs error threshold in pixels')
     axes.grid(True)
+    axes.legend()
     axes.set_ylim([0, 1])
     axes.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/2DPCK_{}.png'.format(checkpoint_name), format='png')
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/2DPCK_{}.png'.format(eval_dataset, checkpoint_name), format='png')
     plt.show()
 
 def rhd_multi_predict():
+    checkpoint_name = 'shufflenetv2k16w-200723-003131-cif-caf-caf25-edge280.pkl.epoch118'
     args = cli()
 
     processor, model = processor_factory(args)
@@ -305,13 +324,14 @@ def rhd_multi_predict():
             except:
                 pass
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/pred_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy',pred_array)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/gt_array_shufflenetv2k16w-200721-233238-cif-caf-caf25-edge280.pkl.epoch069_rhd.npy', gt_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/rhd/predict_output/pred_array_{}.npy'.format(checkpoint_name),pred_array)
+    np.save(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/rhd/predict_output/gt_array_{}.npy'.format(checkpoint_name), gt_array)
 
 
 if __name__ == '__main__':
-    # freihand_multi_predict
+    # freihand_multi_predict()
     # rhd_multi_predict()
     PCK_plot()
 
-# time CUDA_VISIBLE_DEVICES=0,1 python3 -m openpifpaf.predict_multi /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/ --image-output /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052  --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/  --batch-size=16  --long-edge=224
+# time CUDA_VISIBLE_DEVICES=0,1 python3 -m openpifpaf.predict_multi /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/ --image-output /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/  --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052  --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/  --batch-size=16  --long-edge=224
