@@ -39,6 +39,8 @@ class Rhd(torch.utils.data.Dataset):
             img = Image.open(f).convert('RGB')
 
         # annotation for this frame
+        visibility_flag = 2
+        self.anno_all[index]['uv_vis'][:, 2] = visibility_flag*self.anno_all[index]['uv_vis'][:,2]
         anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]
         anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         anns[0].update({'iscrowd': 0})
