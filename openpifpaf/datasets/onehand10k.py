@@ -5,6 +5,9 @@ from .. import transforms, utils
 import os
 import pickle
 import numpy as np
+import PIL
+import scipy.ndimage
+import copy
 
 
 
@@ -56,7 +59,52 @@ class OneHand10K(torch.utils.data.Dataset):
        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
        anns[0].update({'iscrowd': 0})
 
+       # import matplotlib.pyplot as plt
+       # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+       # ax[0].imshow(np.asarray(img))
+       # ax[0].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       # for i, txt in enumerate(n):
+       #     ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+
+       # rescale image
+       order = 1 # order of resize interpolation; 1 means linear interpolation
+       w, h = img.size
+
+       # keep aspect ratio the same
+       target_min_edge = 224
+       min_edge = min(h, w)
+       ratio_factor = target_min_edge / min_edge
+
+       target_h = int(ratio_factor * h)
+       target_w = int(ratio_factor * w)
+       im_np = np.asarray(img)
+       im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+       img = PIL.Image.fromarray(im_np)
+
+       LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
+       assert img.size[0] == target_w
+       assert img.size[1] == target_h
+       # rescale keypoints
+       x_scale = (img.size[0] - 1) / (w - 1)
+       y_scale = (img.size[1] - 1) / (h - 1)
+       # anns2 = copy.deepcopy(anns)
+       for ann in anns:
+           ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
+           ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
+           ann['bbox'][0] *= x_scale
+           ann['bbox'][1] *= y_scale
+           ann['bbox'][2] *= x_scale
+           ann['bbox'][3] *= y_scale
+
        meta = None
+
+       # ax[1].imshow(np.asarray(img))
+       # ax[1].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       # for i, txt in enumerate(n):
+       #     ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+       # plt.show()
 
        # preprocess image and annotations
        img, anns, meta = self.preprocess(img, anns, meta)

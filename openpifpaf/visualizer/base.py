@@ -65,7 +65,7 @@ class BaseVisualizer:
     def colorbar(ax, colored_element, size='3%', pad=0.05):
         divider = make_axes_locatable(ax)
         cax = divider.append_axes('right', size=size, pad=pad)
-        plt.colorbar(colored_element, cax=cax)
+        plt.colorbar(colored_element, cax=cax, extend='both')
 
     @contextmanager
     def image_canvas(self, image, *args, **kwargs):

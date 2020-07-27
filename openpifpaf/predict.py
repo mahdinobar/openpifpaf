@@ -8,6 +8,8 @@ import os
 
 import PIL
 import torch
+import scipy.ndimage
+import numpy as np
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
 
@@ -179,6 +181,18 @@ def main():
             if args.debug or args.show or args.image_output is not None:
                 with open(meta['file_name'], 'rb') as f:
                     cpu_image = PIL.Image.open(f).convert('RGB')
+                    # # rescale image
+                    # order = 1  # order of resize interpolation; 1 means linear interpolation
+                    # w, h = image.size
+                    # # keep aspect ratio the same
+                    # target_min_edge = 224
+                    # min_edge = min(h, w)
+                    # ratio_factor = target_min_edge / min_edge
+                    # target_h = int(ratio_factor * h)
+                    # target_w = int(ratio_factor * w)
+                    # im_np = np.asarray(image)
+                    # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                    # cpu_image = PIL.Image.fromarray(im_np)
 
             visualizer.BaseVisualizer.image(cpu_image)
             if preprocess is not None:
@@ -240,3 +254,7 @@ if __name__ == '__main__':
 # --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200720-202350-cif-caf-caf25-edge200.pkl.epoch052
 # --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/predict_output/
 # --debug
+# --debug-images
+# --debug-indices
+# cif:14
+# caf:14

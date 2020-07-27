@@ -7,6 +7,7 @@ from .. import transforms
 from .freihand_utils import *
 from PIL import Image
 import pickle
+import scipy.ndimage
 
 
 class ImageList(torch.utils.data.Dataset):
@@ -18,6 +19,22 @@ class ImageList(torch.utils.data.Dataset):
         image_path = self.image_paths[index]
         with open(image_path, 'rb') as f:
             image = PIL.Image.open(f).convert('RGB')
+
+        # # rescale image
+        # order = 1  # order of resize interpolation; 1 means linear interpolation
+        # w, h = image.size
+        # # keep aspect ratio the same
+        # target_min_edge = 224
+        # min_edge = min(h, w)
+        # ratio_factor = target_min_edge / min_edge
+        # target_h = int(ratio_factor * h)
+        # target_w = int(ratio_factor * w)
+        # im_np = np.asarray(image)
+        # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        # img = PIL.Image.fromarray(im_np)
+        # assert img.size[0] == target_w
+        # assert img.size[1] == target_h
+
 
         anns = []
         image, anns, meta = self.preprocess(image, anns, None)
@@ -102,6 +119,70 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         return self.number_unique_imgs*self.number_version
 
 
+class ImageList_OneHand10K(torch.utils.data.Dataset):
+    def __init__(self, image_dir, mode, preprocess=None):
+        self.image_dir = image_dir
+        if mode == 'evaluation':
+            self.mode = 'Test'
+        else:
+            raise AssertionError('evaluation mode not defined!')
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        # load all annotations, widths, heights
+        self.names = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',', usecols=0,
+                                   dtype=str)
+        keypoints = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 4:]
+        self.keypoints = keypoints.reshape(keypoints.shape[0], int(keypoints.shape[1] / 2), 2)
+
+    def __getitem__(self, index):
+        # load image
+        with open('/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/source/{}'.format(self.mode, self.names[index]),
+                  'rb') as f:
+            img = Image.open(f).convert('RGB')
+        # annotation for this frame
+        bool_invisible_keypoints = np.logical_or(self.keypoints[index, :, 0] == -1, self.keypoints[index, :, 1] == -1)
+        visibility_flag = 2.
+        anns = [{'keypoints': np.hstack((self.keypoints[index, :, :],
+                                         np.expand_dims(visibility_flag * (np.invert(bool_invisible_keypoints)),
+                                                        axis=1)))}]
+        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        anns[0].update({'iscrowd': 0})
+        # rescale image
+        order = 1  # order of resize interpolation; 1 means linear interpolation
+        w, h = img.size
+        # keep aspect ratio the same
+        target_min_edge = 224
+        min_edge = min(h, w)
+        ratio_factor = target_min_edge / min_edge
+        target_h = int(ratio_factor * h)
+        target_w = int(ratio_factor * w)
+        im_np = np.asarray(img)
+        im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        img = PIL.Image.fromarray(im_np)
+        assert img.size[0] == target_w
+        assert img.size[1] == target_h
+        # rescale keypoints
+        x_scale = (img.size[0] - 1) / (w - 1)
+        y_scale = (img.size[1] - 1) / (h - 1)
+        for ann in anns:
+            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
+            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
+            ann['bbox'][0] *= x_scale
+            ann['bbox'][1] *= y_scale
+            ann['bbox'][2] *= x_scale
+            ann['bbox'][3] *= y_scale
+        meta = None
+
+        # preprocess image and annotations
+        img, anns, meta = self.preprocess(img, anns, meta)
+        meta.update({
+            'dataset_index': index,
+            'file_name': '/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/source/{}'.format(self.mode, self.names[index]),
+        })
+        return img, anns, meta
+
+    def __len__(self):
+        return len(self.names)
+
 class ImageList_RHD(torch.utils.data.Dataset):
     def __init__(self, image_dir, mode, preprocess=None):
         self.image_dir = image_dir
@@ -138,3 +219,53 @@ class ImageList_RHD(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.anno_all)
+
+
+
+
+class ImageList_Freihand_google():
+    def __init__(self, image_dir, mode, preprocess=None):
+        self.image_dir = image_dir
+        self.K_list, self.xyz_list = load_db_annotation(image_dir, 'training')
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        self.mode = mode
+        self.number_unique_imgs = db_size('training')
+        # self.number_unique_imgs = 5
+        if self.mode == 'evaluation':
+            self.number_version = 1
+        else:
+            raise AssertionError('number_version not defined!')
+
+
+    def __getitem__(self, index):
+        if self.mode == 'evaluation':
+            version = sample_version.auto
+        else:
+            raise AssertionError ('version not defined!')
+        # load image and mask
+        img = read_img(index%self.number_unique_imgs, self.image_dir, 'training', version)
+
+        # annotation for this frame
+        K, xyz = self.K_list[index%self.number_unique_imgs], self.xyz_list[index%self.number_unique_imgs]
+        K, xyz = [np.array(x) for x in [K, xyz]]
+        uv = projectPoints(xyz, K) # 2D gt keypoints
+        meta = None
+
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+        visibility_flag = 2 # 0 not labeled and not visible, 1 labeled but not visible and 2 means labeled and visible
+        anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
+        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        anns[0].update({'iscrowd': 0})
+
+        # preprocess image and annotations
+        img, anns, meta = self.preprocess(img, anns, meta)
+
+        meta.update({
+            'dataset_index': index,
+            'file_name': self.image_dir+'training'+'/rgb/'+'%08d.jpg' % sample_version.map_id(index%self.number_unique_imgs, version),
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return self.number_unique_imgs*self.number_version

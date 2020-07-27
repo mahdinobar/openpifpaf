@@ -20,7 +20,7 @@ def canvas(fig_file=None, show=True, dpi=200, nomargin=False, **kwargs):
 
     if 'figsize' not in kwargs:
         # kwargs['figsize'] = (15, 8)
-        kwargs['figsize'] = (10, 6)
+        kwargs['figsize'] = (8, 6)
 
     if nomargin:
         fig = plt.figure(**kwargs)
