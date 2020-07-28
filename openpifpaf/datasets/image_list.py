@@ -8,6 +8,7 @@ from .freihand_utils import *
 from PIL import Image
 import pickle
 import scipy.ndimage
+import scipy.io as scio
 
 
 class ImageList(torch.utils.data.Dataset):
@@ -20,20 +21,38 @@ class ImageList(torch.utils.data.Dataset):
         with open(image_path, 'rb') as f:
             image = PIL.Image.open(f).convert('RGB')
 
+            # rescale image
+            order = 1  # order of resize interpolation; 1 means linear interpolation
+            w, h = image.size
+            # keep aspect ratio the same
+            target_min_edge = 224
+            min_edge = min(h, w)
+            ratio_factor = target_min_edge / min_edge
+            target_h = int(ratio_factor * h)
+            target_w = int(ratio_factor * w)
+            im_np = np.asarray(image)
+            im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+            image = PIL.Image.fromarray(im_np)
+            assert image.size[0] == target_w
+            assert image.size[1] == target_h
         # # rescale image
         # order = 1  # order of resize interpolation; 1 means linear interpolation
         # w, h = image.size
-        # # keep aspect ratio the same
-        # target_min_edge = 224
-        # min_edge = min(h, w)
-        # ratio_factor = target_min_edge / min_edge
+        # target_max_edge = 320
+        # max_edge = max(h, w)
+        # ratio_factor = target_max_edge / max_edge
         # target_h = int(ratio_factor * h)
         # target_w = int(ratio_factor * w)
         # im_np = np.asarray(image)
-        # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-        # img = PIL.Image.fromarray(im_np)
-        # assert img.size[0] == target_w
-        # assert img.size[1] == target_h
+        # image = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        # # ax[1].imshow(image)
+        # pad_up = (320-image.shape[0])//2
+        # pad_down = (320-image.shape[0])//2
+        # pad_left = (320-image.shape[1])//2
+        # pad_right = (320-image.shape[1])//2
+        # image = np.pad(image, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+        # image = Image.fromarray(image.astype('uint8'), 'RGB')
+        # # ax[2].imshow(image)
 
 
         anns = []
@@ -117,6 +136,47 @@ class ImageList_Freihand(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.number_unique_imgs*self.number_version
+
+
+class ImageList_Nyu(torch.utils.data.Dataset):
+    def __init__(self, image_dir, mode, preprocess=None):
+        self.camera_number = 1
+        self.image_dir = image_dir
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        if mode == 'training':
+            self.mode = 'train'
+        elif mode == 'evaluation':
+            self.mode = 'test'
+        else:
+            raise AssertionError('mode not defined!')
+        self.keypointsUV = scio.loadmat('{}/{}/joint_data.mat'.format(self.image_dir, self.mode))['joint_uvd'][:,:,:32,:2]
+
+
+    def __getitem__(self, index):
+        filename = self.image_dir + '/' + self.mode + '/' + 'rgb_{}_{:07d}'.format(self.camera_number, index+1) + '.png'
+        img = Image.open(filename).convert('RGB')
+        uv = self.keypointsUV[self.camera_number - 1, index, :, :]
+
+        meta = None
+
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+        visibility_flag = 2 # 0 not labeled and not visible, 1 labeled but not visible and 2 means labeled and visible
+        anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
+        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        anns[0].update({'iscrowd': 0})
+
+        # preprocess image and annotations
+        img, anns, meta = self.preprocess(img, anns, meta)
+
+        meta.update({
+            'dataset_index': index,
+            'file_name': filename,
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return self.keypointsUV.shape[1]
 
 
 class ImageList_OneHand10K(torch.utils.data.Dataset):

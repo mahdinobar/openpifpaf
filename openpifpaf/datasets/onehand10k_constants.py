@@ -168,15 +168,15 @@ def draw_skeletons(pose):
 
     ann = Annotation(keypoints=ONEHAND10K_KEYPOINTS, skeleton=ONEHAND10K_HAND_SKELETON)
     ann.set(pose, np.array(ONEHAND10K_HAND_SIGMAS) * scale)
-    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/freihand_references/skeleton_freihand.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/onehand10k_references/skeleton_onehand10k.png', keypoint_painter=keypoint_painter)
 
     ann = Annotation(keypoints=ONEHAND10K_KEYPOINTS, skeleton=ONEHAND10K_KINEMATIC_TREE_SKELETON)
     ann.set(pose, np.array(ONEHAND10K_HAND_SIGMAS) * scale)
-    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/freihand_references/skeleton_kinematic_tree_freihand.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/onehand10k_references/skeleton_kinematic_tree_onehand10k.png', keypoint_painter=keypoint_painter)
 
     ann = Annotation(keypoints=ONEHAND10K_KEYPOINTS, skeleton=DENSER_ONEHAND10K_HAND_SKELETON)
     ann.set(pose, np.array(ONEHAND10K_HAND_SIGMAS) * scale)
-    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/freihand_references/skeleton_dense_freihand.png', keypoint_painter=keypoint_painter)
+    draw_ann(ann, filename='/home/mahdi/HVR/git_repos/openpifpaf/docs/onehand10k_references/skeleton_dense_onehand10k.png', keypoint_painter=keypoint_painter)
 
 
 def print_associations():

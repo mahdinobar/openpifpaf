@@ -19,6 +19,16 @@ from .freihand_constants import (
     FREIHAND_KINEMATIC_TREE_SKELETON,
 )
 
+from .nyu_constants import (
+    NYU_CATEGORIES,
+    NYU_KEYPOINTS,
+    NYU_HAND_SKELETON,
+    NYU_HAND_SIGMAS,
+    NYU_UPRIGHT_POSE,
+    DENSER_NYU_HAND_CONNECTIONS,
+    NYU_KINEMATIC_TREE_SKELETON,
+)
+
 from .onehand10k_constants import (
     ONEHAND10K_CATEGORIES,
     ONEHAND10K_KEYPOINTS,
@@ -49,8 +59,10 @@ def factory(head_names):
     # return [factory_single_freihand(hn) for hn in head_names]
     # uncomment for rhd dataset
     # return [factory_single_rhd(hn) for hn in head_names]
-    # uncomment for onehand10k dataset
-    return [factory_single_onehand10k(hn) for hn in head_names]
+    # # uncomment for onehand10k dataset
+    # return [factory_single_onehand10k(hn) for hn in head_names]
+    # uncomment for nyu dataset
+    return [factory_single_nyu(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:
@@ -114,6 +126,38 @@ def factory_single_freihand(head_name):
                                FREIHAND_UPRIGHT_POSE,
                                FREIHAND_HAND_SKELETON)
     raise NotImplementedError
+
+def factory_single_nyu(head_name):
+    if 'cifdet' in head_name:
+        return DetectionMeta(head_name, NYU_CATEGORIES)
+    if 'pif' in head_name or 'cif' in head_name:
+        return IntensityMeta(head_name,
+                             NYU_KEYPOINTS,
+                             NYU_HAND_SIGMAS,
+                             NYU_UPRIGHT_POSE,
+                             NYU_HAND_SKELETON)
+    if 'caf25' in head_name:
+        return AssociationMeta(head_name,
+                               NYU_KEYPOINTS,
+                               NYU_HAND_SIGMAS,
+                               NYU_UPRIGHT_POSE,
+                               DENSER_NYU_HAND_CONNECTIONS,
+                               sparse_skeleton=NYU_HAND_SKELETON,
+                               only_in_field_of_view=True)
+    if 'caf16' in head_name:
+        return AssociationMeta(head_name,
+                               NYU_KEYPOINTS,
+                               NYU_HAND_SIGMAS,
+                               NYU_UPRIGHT_POSE,
+                               NYU_KINEMATIC_TREE_SKELETON)
+    if head_name == 'caf':
+        return AssociationMeta(head_name,
+                               NYU_KEYPOINTS,
+                               NYU_HAND_SIGMAS,
+                               NYU_UPRIGHT_POSE,
+                               NYU_HAND_SKELETON)
+    raise NotImplementedError
+
 
 def factory_single_onehand10k(head_name):
     if 'cifdet' in head_name:

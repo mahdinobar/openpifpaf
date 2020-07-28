@@ -213,14 +213,14 @@ def freihand_multi_predict(checkpoint_name, eval_dataset):
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset, checkpoint_name), gt_array)
 
 
-def onehand10k_multi_predict():
+def onehand10k_multi_predict(checkpoint_name, eval_dataset):
     args = cli()
 
     processor, model = processor_factory(args)
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList_Freihand(args.images[0], mode='evaluation', preprocess=preprocess)
+    data = datasets.ImageList_OneHand10K(args.images[0], mode='evaluation', preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -267,111 +267,9 @@ def onehand10k_multi_predict():
             except:
                 pass
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/pred_array.npy', pred_array)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/gt_array.npy', gt_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(eval_dataset, checkpoint_name), pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset, checkpoint_name), gt_array)
 
-
-def PCK_plot(checkpoint_name, eval_dataset):
-    pred_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_pred_array_{}.npy'.format(eval_dataset, checkpoint_name))
-    gt_array = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_gt_array_{}.npy'.format(eval_dataset, checkpoint_name))
-
-    def PCK(PCK_thresh, pred_score_thresh = 0.1, gt_conf_thresh = 0):
-        total_counted_data = 0
-        total_correct_data = 0
-        total_counted_data_fingers = np.zeros(21)
-        total_correct_data_fingers = np.zeros(21)
-        for data_id in range (0, pred_array.shape[0]):
-            # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
-            bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (gt_array[data_id, :, 2] > gt_conf_thresh)
-            _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
-            _norms = np.linalg.norm(_errors, axis=1)
-
-            for joint_id in range(0, 21):
-                if bool_acceptable_data[joint_id]==True:
-                    _error = pred_array[data_id, joint_id, :2] - gt_array[data_id, joint_id, :2]
-                    _norm = np.linalg.norm(_error, axis=0)
-                    total_correct_data_fingers[joint_id] = total_correct_data_fingers[joint_id] + sum([_norm] < PCK_thresh)
-                    total_counted_data_fingers[joint_id] = total_counted_data_fingers[joint_id] + 1
-
-            total_correct_data += sum(_norms<PCK_thresh)
-            total_counted_data += _norms.shape[0]
-            # # modified definition: count failures
-            # total_counted_data += sum(bool_gt_acceptable_data)
-
-        PCK_value = total_correct_data/total_counted_data
-
-        PCK_value_fingers = total_correct_data_fingers/total_counted_data_fingers
-
-        return PCK_value, PCK_value_fingers
-
-    num_intervals = 60
-    max_error = 30
-    PCK_thresh = np.linspace(0, max_error, num_intervals)
-    # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
-
-
-    y=[]
-    y_joints = np.zeros((21, num_intervals))
-    # for iter in range(0,num_intervals):
-    #     PCK_value, PCK_value_fingers = PCK(PCK_thresh[iter])
-    #     y_joints[:, iter] = PCK_value_fingers
-    #     y.append(PCK_value)
-    #     print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value, iter/num_intervals*100))
-
-    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCK_fingers.npy'.format(eval_dataset, checkpoint_name), y_joints)
-    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_PCK_thresh.npy'.format(eval_dataset, checkpoint_name), PCK_thresh)
-    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_y.npy'.format(eval_dataset, checkpoint_name), y)
-
-    y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCK_fingers.npy'.format(
-        eval_dataset, checkpoint_name))
-    PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_PCK_thresh.npy'.format(
-        eval_dataset, checkpoint_name))
-    y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_y.npy'.format(eval_dataset,
-                                                                                                        checkpoint_name))
-
-    # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-
-    # handPifPaf_paper_2DPCK_PXLs_freihand = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name))
-    # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
-    # y = handPifPaf_paper_2DPCK_PXLs_freihand[1, :]
-
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
-    axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
-    # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
-    # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
-    # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
-    axes.set_xlabel('Error Threshold [px]')
-    axes.set_ylabel('2D PCK')
-    axes.set_title('Percentage of Correct Key-points vs Error Threshold')
-    axes.grid(True)
-    axes.legend()
-    axes.set_ylim([0, 1])
-    axes.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_2DPCK_{}.png'.format(eval_dataset, checkpoint_name), format='png')
-    plt.show()
-
-    
-    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
-    axes2.plot(PCK_thresh, y_joints[0, :], label='{}'.format(FREIHAND_KEYPOINTS[0]), c='k')
-    cm = plt.get_cmap('tab20')
-    axes2.set_prop_cycle(color=[cm(1. * i / 21) for i in range(21)])
-    for joint_id in range(1, 21):
-        axes2.plot(PCK_thresh, y_joints[joint_id, :], label='{}'.format(FREIHAND_KEYPOINTS[joint_id]))
-
-
-    axes2.set_xlabel('Error Threshold [px]')
-    axes2.set_ylabel('2D PCK')
-    axes2.set_title('Percentage of Correct Key-points vs Error Threshold per Joint')
-    axes2.grid(True)
-    axes2.legend()
-    axes2.set_ylim([0, 1])
-    axes2.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_2DPCK_{}_joints.png'.format(eval_dataset, checkpoint_name), format='png')
-    plt.show()
-    print('Successful!')
 
 def rhd_multi_predict():
     checkpoint_name = 'shufflenetv2k16w-200723-003131-cif-caf-caf25-edge280.pkl.epoch118'
@@ -514,8 +412,11 @@ def freihand_multi_predict_google(checkpoint_name, eval_dataset, mode = 'evaluat
         im_np = np.asarray(img)
         img = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
         # ax[1].imshow(img)
-
-        img = np.pad(img, pad_width=(((480-img.shape[0])//2, (480-img.shape[0])//2), ((640-img.shape[0])//2, (640-img.shape[0])//2), (0, 0)), mode='symmetric')
+        pad_up = (480-img.shape[0])//2
+        pad_down = (480-img.shape[0])//2
+        pad_left = (640-img.shape[1])//2
+        pad_right = (640-img.shape[1])//2
+        img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
         # ax[2].imshow(img)
 
         try:
@@ -543,8 +444,16 @@ def freihand_multi_predict_google(checkpoint_name, eval_dataset, mode = 'evaluat
         #     ax[2].annotate(txt, (pred[txt, 0], pred[txt, 1]), c='w')
 
         # rescale back predictions
-        x_scale = (img.shape[1] - 1) / (w - 1)
-        y_scale = (img.shape[0] - 1) / (h - 1)
+        # x_scale = (img.shape[1] - 1) / (w - 1)
+        # y_scale = (img.shape[0] - 1) / (h - 1)
+        # pred[:, 0] = pred[:, 0] / x_scale
+        # pred[:, 1] = pred[:, 1] / y_scale
+        # return back pad effect on annotations to prepare for rescale back
+        pred[:, 0] = pred[:, 0] - pad_left
+        pred[:, 1] = pred[:, 1] - pad_up
+        # rescale back predictions
+        x_scale = (target_w - 1) / (w - 1)
+        y_scale = (target_h - 1) / (h - 1)
         pred[:, 0] = pred[:, 0] / x_scale
         pred[:, 1] = pred[:, 1] / y_scale
 
@@ -573,14 +482,132 @@ def freihand_multi_predict_google(checkpoint_name, eval_dataset, mode = 'evaluat
         eval_dataset, checkpoint_name), google_gt_array)
 
 
+def PCK_plot(checkpoint_name, eval_dataset):
+    pred_array = np.load(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(
+            eval_dataset, checkpoint_name))
+    gt_array = np.load(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset,
+                                                                                                           checkpoint_name))
+    import pdb; pdb.set_trace()
+
+    def PCK(PCK_thresh, pred_score_thresh=0.1, gt_conf_thresh=0):
+        total_counted_data = 0
+        total_correct_data = 0
+        total_counted_data_fingers = np.zeros(21)
+        total_correct_data_fingers = np.zeros(21)
+        for data_id in range(0, pred_array.shape[0]):
+            # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
+            bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (
+                        gt_array[data_id, :, 2] > gt_conf_thresh)
+            _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
+            _norms = np.linalg.norm(_errors, axis=1)
+
+            for joint_id in range(0, 21):
+                if bool_acceptable_data[joint_id] == True:
+                    _error = pred_array[data_id, joint_id, :2] - gt_array[data_id, joint_id, :2]
+                    _norm = np.linalg.norm(_error, axis=0)
+                    total_correct_data_fingers[joint_id] = total_correct_data_fingers[joint_id] + sum(
+                        [_norm] < PCK_thresh)
+                    total_counted_data_fingers[joint_id] = total_counted_data_fingers[joint_id] + 1
+
+            total_correct_data += sum(_norms < PCK_thresh)
+            total_counted_data += _norms.shape[0]
+            # # modified definition: count failures
+            # total_counted_data += sum(bool_gt_acceptable_data)
+
+        PCK_value = total_correct_data / total_counted_data
+
+        PCK_value_fingers = total_correct_data_fingers / total_counted_data_fingers
+
+        return PCK_value, PCK_value_fingers
+
+    num_intervals = 2
+    max_error = 30
+    PCK_thresh = np.linspace(0, max_error, num_intervals)
+    # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
+
+    y = []
+    y_joints = np.zeros((21, num_intervals))
+    for iter in range(0, num_intervals):
+        PCK_value, PCK_value_fingers = PCK(PCK_thresh[iter])
+        y_joints[:, iter] = PCK_value_fingers
+        y.append(PCK_value)
+        print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
+                                                                                          iter / num_intervals * 100))
+
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(
+        eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCK_fingers.npy'.format(
+        eval_dataset, checkpoint_name), y_joints)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_PCK_thresh.npy'.format(
+        eval_dataset, checkpoint_name), PCK_thresh)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_y.npy'.format(eval_dataset,
+                                                                                                        checkpoint_name),
+            y)
+
+    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCK_fingers.npy'.format(
+    #     eval_dataset, checkpoint_name))
+    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_PCK_thresh.npy'.format(
+    #     eval_dataset, checkpoint_name))
+    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_y.npy'.format(eval_dataset,
+    #                                                                                                     checkpoint_name))
+
+    # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+
+    # handPifPaf_paper_2DPCK_PXLs_freihand = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name))
+    # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
+    # y = handPifPaf_paper_2DPCK_PXLs_freihand[1, :]
+
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
+    # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
+    # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
+    # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
+    axes.set_xlabel('Error Threshold [px]')
+    axes.set_ylabel('2D PCK')
+    axes.set_title('Percentage of Correct Key-points vs Error Threshold')
+    axes.grid(True)
+    axes.legend()
+    axes.set_ylim([0, 1])
+    axes.set_xlim([0, max_error])
+    plt.savefig(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/2DPCK_{}.png'.format(eval_dataset,
+                                                                                                        checkpoint_name),
+        format='png')
+    plt.show()
+
+    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    axes2.plot(PCK_thresh, y_joints[0, :], label='{}'.format(FREIHAND_KEYPOINTS[0]), c='k')
+    cm = plt.get_cmap('tab20')
+    axes2.set_prop_cycle(color=[cm(1. * i / 21) for i in range(21)])
+    for joint_id in range(1, 21):
+        axes2.plot(PCK_thresh, y_joints[joint_id, :], label='{}'.format(FREIHAND_KEYPOINTS[joint_id]))
+
+    axes2.set_xlabel('Error Threshold [px]')
+    axes2.set_ylabel('2D PCK')
+    axes2.set_title('Percentage of Correct Key-points vs Error Threshold per Joint')
+    axes2.grid(True)
+    axes2.legend()
+    axes2.set_ylim([0, 1])
+    axes2.set_xlim([0, max_error])
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/2DPCK_{}_joints.png'.format(
+        eval_dataset, checkpoint_name), format='png')
+    plt.show()
+    print('PCK_plot Successfully Ended!')
+
+
 if __name__ == '__main__':
-    # checkpoint_name = 'shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch200'
-    checkpoint_name = 'shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch172'
-    eval_dataset = 'freihand'
+    # checkpoint_name = 'shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch172'
+    # eval_dataset = 'freihand'
+    checkpoint_name = 'shufflenetv2k16w-200725-113056-cif-caf-caf25-edge200.pkl.epoch320'
+    eval_dataset = 'onehand10k'
     # freihand_multi_predict(checkpoint_name, eval_dataset)
     # rhd_multi_predict()
-    # onehand10k_multi_predict(checkpoint_name, eval_dataset)
-    PCK_plot(checkpoint_name, eval_dataset)
+    onehand10k_multi_predict(checkpoint_name, eval_dataset)
+    # PCK_plot(checkpoint_name, eval_dataset)
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 

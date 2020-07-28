@@ -72,9 +72,9 @@ class OneHand10K(torch.utils.data.Dataset):
        w, h = img.size
 
        # keep aspect ratio the same
-       target_min_edge = 224
-       min_edge = min(h, w)
-       ratio_factor = target_min_edge / min_edge
+       target_max_edge = 224
+       max_edge = max(h, w)
+       ratio_factor = target_max_edge / max_edge
 
        target_h = int(ratio_factor * h)
        target_w = int(ratio_factor * w)
@@ -85,6 +85,17 @@ class OneHand10K(torch.utils.data.Dataset):
        LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
        assert img.size[0] == target_w
        assert img.size[1] == target_h
+
+        # pad frames
+       img = np.asarray(img)
+       pad_up = (224 - img.shape[0]) // 2
+       pad_down = (224 - img.shape[0]) // 2
+       pad_left = (224 - img.shape[1]) // 2
+       pad_right = (224 - img.shape[1]) // 2
+       img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+       img = Image.fromarray(img.astype('uint8'), 'RGB')
+
+
        # rescale keypoints
        x_scale = (img.size[0] - 1) / (w - 1)
        y_scale = (img.size[1] - 1) / (h - 1)
@@ -96,6 +107,14 @@ class OneHand10K(torch.utils.data.Dataset):
            ann['bbox'][1] *= y_scale
            ann['bbox'][2] *= x_scale
            ann['bbox'][3] *= y_scale
+            # modify for pad
+           ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
+           ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
+           ann['bbox'][0] += pad_left
+           ann['bbox'][1] += pad_up
+           ann['bbox'][2] += pad_left
+           ann['bbox'][3] += pad_up
+
 
        meta = None
 

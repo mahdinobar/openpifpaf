@@ -10,6 +10,8 @@ import PIL
 import torch
 import scipy.ndimage
 import numpy as np
+from PIL import Image
+
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
 
@@ -156,7 +158,7 @@ def main():
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList(args.images, preprocess=preprocess)
+    data = datasets.ImageList_Nyu(args.images, preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -181,18 +183,26 @@ def main():
             if args.debug or args.show or args.image_output is not None:
                 with open(meta['file_name'], 'rb') as f:
                     cpu_image = PIL.Image.open(f).convert('RGB')
+
+                    # image = PIL.Image.open(f).convert('RGB')
                     # # rescale image
                     # order = 1  # order of resize interpolation; 1 means linear interpolation
                     # w, h = image.size
-                    # # keep aspect ratio the same
-                    # target_min_edge = 224
-                    # min_edge = min(h, w)
-                    # ratio_factor = target_min_edge / min_edge
+                    # target_max_edge = 320
+                    # max_edge = max(h, w)
+                    # ratio_factor = target_max_edge / max_edge
                     # target_h = int(ratio_factor * h)
                     # target_w = int(ratio_factor * w)
                     # im_np = np.asarray(image)
-                    # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-                    # cpu_image = PIL.Image.fromarray(im_np)
+                    # image = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                    # # ax[1].imshow(image)
+                    # pad_up = (320 - image.shape[0]) // 2
+                    # pad_down = (320 - image.shape[0]) // 2
+                    # pad_left = (320 - image.shape[1]) // 2
+                    # pad_right = (320 - image.shape[1]) // 2
+                    # image = np.pad(image, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)),
+                    #                mode='symmetric')
+                    # cpu_image = Image.fromarray(image.astype('uint8'), 'RGB')
 
             visualizer.BaseVisualizer.image(cpu_image)
             if preprocess is not None:
