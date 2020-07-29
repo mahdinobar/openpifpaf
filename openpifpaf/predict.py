@@ -158,7 +158,7 @@ def main():
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList_Nyu(args.images, preprocess=preprocess)
+    data = datasets.ImageList(args.images, preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,

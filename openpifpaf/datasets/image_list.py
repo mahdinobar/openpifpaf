@@ -21,20 +21,21 @@ class ImageList(torch.utils.data.Dataset):
         with open(image_path, 'rb') as f:
             image = PIL.Image.open(f).convert('RGB')
 
-            # rescale image
-            order = 1  # order of resize interpolation; 1 means linear interpolation
-            w, h = image.size
-            # keep aspect ratio the same
-            target_min_edge = 224
-            min_edge = min(h, w)
-            ratio_factor = target_min_edge / min_edge
-            target_h = int(ratio_factor * h)
-            target_w = int(ratio_factor * w)
-            im_np = np.asarray(image)
-            im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-            image = PIL.Image.fromarray(im_np)
-            assert image.size[0] == target_w
-            assert image.size[1] == target_h
+            # # rescale image
+            # order = 1  # order of resize interpolation; 1 means linear interpolation
+            # w, h = image.size
+            # # keep aspect ratio the same
+            # target_min_edge = 224
+            # min_edge = min(h, w)
+            # ratio_factor = target_min_edge / min_edge
+            # target_h = int(ratio_factor * h)
+            # target_w = int(ratio_factor * w)
+            # im_np = np.asarray(image)
+            # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+            # image = PIL.Image.fromarray(im_np)
+            # assert image.size[0] == target_w
+            # assert image.size[1] == target_h
+
         # # rescale image
         # order = 1  # order of resize interpolation; 1 means linear interpolation
         # w, h = image.size
