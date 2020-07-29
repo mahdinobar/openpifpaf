@@ -58,11 +58,11 @@ def factory(head_names):
     # # uncomment for freihand dataset
     # return [factory_single_freihand(hn) for hn in head_names]
     # uncomment for rhd dataset
-    # return [factory_single_rhd(hn) for hn in head_names]
+    return [factory_single_rhd(hn) for hn in head_names]
     # # uncomment for onehand10k dataset
     # return [factory_single_onehand10k(hn) for hn in head_names]
-    # uncomment for nyu dataset
-    return [factory_single_nyu(hn) for hn in head_names]
+    # # uncomment for nyu dataset
+    # return [factory_single_nyu(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:

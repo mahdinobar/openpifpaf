@@ -37,14 +37,19 @@ class OneHand10K(torch.utils.data.Dataset):
        self.target_transforms = target_transforms
        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
        # load all annotations, widths, heights
-       self.names = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',', usecols=0,
+       all_names = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',', usecols=0,
                              dtype=str)
+       annotated_frames = np.load('/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/annotated_frames.npy'.format(self.mode))
+       self.names = all_names[annotated_frames]
+
+       # self.names = names[annotated_frames]
        # self.widths = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 1]
        # self.heights = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 2]
        # self.hand_number_per_frame = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode),
        #                                       delimiter=',')[:, 3]
-       keypoints = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 4:]
-       self.keypoints = keypoints.reshape(keypoints.shape[0], int(keypoints.shape[1] / 2), 2)
+       all_keypoints = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 4:]
+       all_keypoints = all_keypoints.reshape(all_keypoints.shape[0], int(all_keypoints.shape[1] / 2), 2)
+       self.keypoints = all_keypoints[annotated_frames,:,:]
 
 
    def __getitem__(self, index):
@@ -59,46 +64,49 @@ class OneHand10K(torch.utils.data.Dataset):
        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
        anns[0].update({'iscrowd': 0})
 
-       # import matplotlib.pyplot as plt
-       # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
-       # ax[0].imshow(np.asarray(img))
-       # ax[0].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
-       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
-       # for i, txt in enumerate(n):
-       #     ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+
+       # # for debug to see frames without any annotation
+       # unannotated_frame = []
+       # annotated_frames = []
+       # for k in range(0, self.keypoints.shape[0]):
+       #     bool_invisible_keypoints = np.logical_or(self.keypoints[k, :, 0] == -1,
+       #                                              self.keypoints[k, :, 1] == -1)
+       #     if sum(bool_invisible_keypoints==0)==21:
+       #         unannotated_frame.append(k)
+       #         print ('FOUND UNANNOTATED!!')
+       #     if sum(bool_invisible_keypoints == 0) < 21:
+       #         annotated_frames.append(k)
+       # np.save('/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/annotated_frames.npy'.format(self.mode),
+       #         annotated_frames)
+
+       import matplotlib.pyplot as plt
+       fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+       ax[0].imshow(np.asarray(img))
+       ax[0].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       for i, txt in enumerate(n):
+           ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
 
        # rescale image
-       order = 1 # order of resize interpolation; 1 means linear interpolation
+       order = 1  # order of resize interpolation; 1 means linear interpolation
        w, h = img.size
-
        # keep aspect ratio the same
-       target_max_edge = 224
+       reference_edge = 224
+       target_max_edge = reference_edge
        max_edge = max(h, w)
        ratio_factor = target_max_edge / max_edge
-
        target_h = int(ratio_factor * h)
        target_w = int(ratio_factor * w)
        im_np = np.asarray(img)
        im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
        img = PIL.Image.fromarray(im_np)
-
        LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
        assert img.size[0] == target_w
        assert img.size[1] == target_h
 
-        # pad frames
-       img = np.asarray(img)
-       pad_up = (224 - img.shape[0]) // 2
-       pad_down = (224 - img.shape[0]) // 2
-       pad_left = (224 - img.shape[1]) // 2
-       pad_right = (224 - img.shape[1]) // 2
-       img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-       img = Image.fromarray(img.astype('uint8'), 'RGB')
-
-
        # rescale keypoints
-       x_scale = (img.size[0] - 1) / (w - 1)
-       y_scale = (img.size[1] - 1) / (h - 1)
+       x_scale = (img.size[0]) / (w)
+       y_scale = (img.size[1]) / (h)
        # anns2 = copy.deepcopy(anns)
        for ann in anns:
            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
@@ -107,7 +115,17 @@ class OneHand10K(torch.utils.data.Dataset):
            ann['bbox'][1] *= y_scale
            ann['bbox'][2] *= x_scale
            ann['bbox'][3] *= y_scale
-            # modify for pad
+
+       # pad frames
+       img = np.asarray(img)
+       pad_up = (reference_edge - img.shape[0]) // 2
+       pad_down = (reference_edge - img.shape[0]) // 2
+       pad_left = (reference_edge - img.shape[1]) // 2
+       pad_right = (reference_edge - img.shape[1]) // 2
+       img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='constant')
+       img = Image.fromarray(img.astype('uint8'), 'RGB')
+       for ann in anns:
+           # modify for pad
            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
            ann['bbox'][0] += pad_left
@@ -115,15 +133,14 @@ class OneHand10K(torch.utils.data.Dataset):
            ann['bbox'][2] += pad_left
            ann['bbox'][3] += pad_up
 
-
        meta = None
 
-       # ax[1].imshow(np.asarray(img))
-       # ax[1].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
-       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
-       # for i, txt in enumerate(n):
-       #     ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
-       # plt.show()
+       ax[1].imshow(np.asarray(img))
+       ax[1].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       for i, txt in enumerate(n):
+           ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+       plt.show()
 
        # preprocess image and annotations
        img, anns, meta = self.preprocess(img, anns, meta)

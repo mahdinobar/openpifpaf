@@ -261,10 +261,90 @@ class ImageList_RHD(torch.utils.data.Dataset):
         with open(os.path.join(self.image_dir, self.mode, 'color', '%.5d.png' % index), 'rb') as f:
             img = Image.open(f).convert('RGB')
 
-        # annotation for this frame
-        anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]
-        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
-        anns[0].update({'iscrowd': 0})
+        # # annotation for this frame
+        # anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]
+        # anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+        # anns[0].update({'iscrowd': 0})
+
+        # uncomment to combine left and right hand to one type
+        if np.any(self.anno_all[index]['uv_vis'][:21, :]) and np.any(self.anno_all[index]['uv_vis'][21:, :]):
+            anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
+            anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
+            anns = list([anns_left_hand[0], anns_right_hand[0]])
+            anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+            anns[0].update({'iscrowd': 0})
+            anns[1].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+            anns[1].update({'iscrowd': 0})
+        elif np.any(self.anno_all[index]['uv_vis'][:21, :]):
+            anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
+            anns = list([anns_left_hand[0]])
+            anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+            anns[0].update({'iscrowd': 0})
+        elif np.any(self.anno_all[index]['uv_vis'][21:, :]):
+            anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
+            anns = list([anns_right_hand[0]])
+            anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
+            anns[0].update({'iscrowd': 0})
+        else:
+            raise AssertionError('frame index={} has no annotation!'.format(index))
+
+        # import matplotlib.pyplot as plt
+        # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+        # ax[0].imshow(np.asarray(img))
+        # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2]==2
+        # ax[0].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1], 'ro')
+        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        # ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
+
+        # rescale image
+        order = 1  # order of resize interpolation; 1 means linear interpolation
+        w, h = img.size
+        # keep aspect ratio the same
+        reference_edge = 224
+        target_max_edge = reference_edge
+        max_edge = max(h, w)
+        ratio_factor = target_max_edge / max_edge
+        target_h = int(ratio_factor * h)
+        target_w = int(ratio_factor * w)
+        im_np = np.asarray(img)
+        im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        img = PIL.Image.fromarray(im_np)
+        assert img.size[0] == target_w
+        assert img.size[1] == target_h
+        # pad frames
+        img = np.asarray(img)
+        pad_up = (reference_edge - img.shape[0]) // 2
+        pad_down = (reference_edge - img.shape[0]) // 2
+        pad_left = (reference_edge - img.shape[1]) // 2
+        pad_right = (reference_edge - img.shape[1]) // 2
+        img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+        # rescale keypoints
+        x_scale = (img.size[0] - 1) / (w - 1)
+        y_scale = (img.size[1] - 1) / (h - 1)
+        for ann in anns:
+            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
+            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
+            ann['bbox'][0] *= x_scale
+            ann['bbox'][1] *= y_scale
+            ann['bbox'][2] *= x_scale
+            ann['bbox'][3] *= y_scale
+            # modify for pad
+            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
+            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
+            ann['bbox'][0] += pad_left
+            ann['bbox'][1] += pad_up
+            ann['bbox'][2] += pad_left
+            ann['bbox'][3] += pad_up
+
+        # ax[1].imshow(np.asarray(img))
+        # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2] == 2
+        # ax[1].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1],
+        #            'ro')
+        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        # ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
+        #            'go')
+        # plt.show()
 
         meta = None
 

@@ -13,7 +13,7 @@ NYU_HAND_SKELETON = [
 
 NYU_KINEMATIC_TREE_SKELETON = NYU_HAND_SKELETON
 
-NYU_KEYPOINTS_list = list(scio.loadmat('/home/mahdi/HVR/hvr/A2J/data/nyu/train/joint_data.mat')['joint_names'][0,:32])
+NYU_KEYPOINTS_list = list(scio.loadmat('/home/mahdi/HVR/git_repos/openpifpaf/nyu/train/joint_data.mat')['joint_names'][0,:32])
 
 NYU_KEYPOINTS = [
     str(NYU_KEYPOINTS_list[0][0]),
