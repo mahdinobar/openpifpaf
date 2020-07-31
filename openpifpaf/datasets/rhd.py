@@ -60,8 +60,11 @@ class Rhd(torch.utils.data.Dataset):
         # anns[1].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         # anns[1].update({'iscrowd': 0})
 
+        # for i in range(0, 41258):
+        #     if sum(self.anno_all[i]['uv_vis'][:, 2])==0:
+        #         print('found unannotated frame!!! i={}'.format(i))
         # uncomment to combine left and right hand to one type
-        if np.any(self.anno_all[index]['uv_vis'][:21, :]) and np.any(self.anno_all[index]['uv_vis'][21:, :]):
+        if np.any(self.anno_all[index]['uv_vis'][:21, 2]) and np.any(self.anno_all[index]['uv_vis'][21:, 2]):
             anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
             anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
             anns = list([anns_left_hand[0], anns_right_hand[0]])
@@ -69,12 +72,12 @@ class Rhd(torch.utils.data.Dataset):
             anns[0].update({'iscrowd': 0})
             anns[1].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
             anns[1].update({'iscrowd': 0})
-        elif np.any(self.anno_all[index]['uv_vis'][:21, :]):
+        elif np.any(self.anno_all[index]['uv_vis'][:21, 2]):
             anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
             anns = list([anns_left_hand[0]])
             anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
             anns[0].update({'iscrowd': 0})
-        elif np.any(self.anno_all[index]['uv_vis'][21:, :]):
+        elif np.any(self.anno_all[index]['uv_vis'][21:, 2]):
             anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
             anns = list([anns_right_hand[0]])
             anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})

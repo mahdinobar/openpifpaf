@@ -158,7 +158,7 @@ def main():
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList(args.images, preprocess=preprocess)
+    data = datasets.ImageList_RHD(args.images, preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -171,7 +171,7 @@ def main():
     )
     annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
 
-    for batch_i, (image_tensors_batch, _, meta_batch) in enumerate(data_loader):
+    for batch_i, (image_tensors_batch, _anns, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
 
         # unbatch
@@ -184,25 +184,57 @@ def main():
                 with open(meta['file_name'], 'rb') as f:
                     cpu_image = PIL.Image.open(f).convert('RGB')
 
-                    # image = PIL.Image.open(f).convert('RGB')
-                    # # rescale image
-                    # order = 1  # order of resize interpolation; 1 means linear interpolation
-                    # w, h = image.size
-                    # target_max_edge = 320
-                    # max_edge = max(h, w)
-                    # ratio_factor = target_max_edge / max_edge
-                    # target_h = int(ratio_factor * h)
-                    # target_w = int(ratio_factor * w)
-                    # im_np = np.asarray(image)
-                    # image = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-                    # # ax[1].imshow(image)
-                    # pad_up = (320 - image.shape[0]) // 2
-                    # pad_down = (320 - image.shape[0]) // 2
-                    # pad_left = (320 - image.shape[1]) // 2
-                    # pad_right = (320 - image.shape[1]) // 2
-                    # image = np.pad(image, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)),
-                    #                mode='symmetric')
-                    # cpu_image = Image.fromarray(image.astype('uint8'), 'RGB')
+                    # uncomment for rhd
+                    img = cpu_image
+                    # rescale image
+                    order = 1  # order of resize interpolation; 1 means linear interpolation
+                    w, h = img.size
+                    # keep aspect ratio the same
+                    reference_edge = 224
+                    target_max_edge = reference_edge
+                    max_edge = max(h, w)
+                    ratio_factor = target_max_edge / max_edge
+                    target_h = int(ratio_factor * h)
+                    target_w = int(ratio_factor * w)
+                    im_np = np.asarray(img)
+                    im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                    img = PIL.Image.fromarray(im_np)
+                    assert img.size[0] == target_w
+                    assert img.size[1] == target_h
+                    # pad frames
+                    img = np.asarray(img)
+                    pad_up = (reference_edge - img.shape[0]) // 2
+                    pad_down = (reference_edge - img.shape[0]) // 2
+                    pad_left = (reference_edge - img.shape[1]) // 2
+                    pad_right = (reference_edge - img.shape[1]) // 2
+                    img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+
+                    cpu_image = Image.fromarray(img.astype('uint8'), 'RGB')
+
+                    import matplotlib.pyplot as plt
+                    fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+                    ax.imshow(np.asarray(img))
+                    # bool_annotated_joints_1 = _anns[0][0]['keypoints'][:, 2] == 2
+                    ax.plot(_anns[0][1]['keypoints'][:, 0],
+                               _anns[0][1]['keypoints'][:, 1], 'ro')
+                    ax.plot(pred[0].data[:, 0],
+                               pred[0].data[:, 1], 'bx')
+
+                    ax.plot(_anns[0][0]['keypoints'][:, 0],
+                               _anns[0][0]['keypoints'][:, 1], 'ro')
+                    ax.plot(pred[1].data[:, 0],
+                               pred[1].data[:, 1], 'bx')
+                    for txt in range(0, 21):
+                        ax.annotate(txt, (_anns[0][1]['keypoints'][txt, 0]-3, _anns[0][1]['keypoints'][txt, 1]-3), c='r')
+                        ax.annotate(txt, (pred[0].data[txt, 0]+3, pred[0].data[txt, 1]+3), c='b')
+
+                        ax.annotate(txt, (_anns[0][0]['keypoints'][txt, 0] - 3, _anns[0][0]['keypoints'][txt, 1] - 3),
+                                    c='r')
+                        ax.annotate(txt, (pred[1].data[txt, 0] + 3, pred[1].data[txt, 1] + 3), c='b')
+
+
+                    plt.show()
+
 
             visualizer.BaseVisualizer.image(cpu_image)
             if preprocess is not None:

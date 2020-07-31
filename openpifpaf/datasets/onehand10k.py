@@ -79,13 +79,13 @@ class OneHand10K(torch.utils.data.Dataset):
        # np.save('/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/annotated_frames.npy'.format(self.mode),
        #         annotated_frames)
 
-       import matplotlib.pyplot as plt
-       fig, ax = plt.subplots(1, 2, figsize=(12, 12))
-       ax[0].imshow(np.asarray(img))
-       ax[0].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
-       n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
-       for i, txt in enumerate(n):
-           ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+       # import matplotlib.pyplot as plt
+       # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+       # ax[0].imshow(np.asarray(img))
+       # ax[0].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       # for i, txt in enumerate(n):
+       #     ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
 
        # rescale image
        order = 1  # order of resize interpolation; 1 means linear interpolation
@@ -122,7 +122,7 @@ class OneHand10K(torch.utils.data.Dataset):
        pad_down = (reference_edge - img.shape[0]) // 2
        pad_left = (reference_edge - img.shape[1]) // 2
        pad_right = (reference_edge - img.shape[1]) // 2
-       img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='constant')
+       img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
        img = Image.fromarray(img.astype('uint8'), 'RGB')
        for ann in anns:
            # modify for pad
@@ -135,12 +135,12 @@ class OneHand10K(torch.utils.data.Dataset):
 
        meta = None
 
-       ax[1].imshow(np.asarray(img))
-       ax[1].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
-       n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
-       for i, txt in enumerate(n):
-           ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
-       plt.show()
+       # ax[1].imshow(np.asarray(img))
+       # ax[1].plot(anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 0], anns[0]['keypoints'][np.invert(bool_invisible_keypoints), 1], 'ro')
+       # n = list(np.argwhere(np.invert(bool_invisible_keypoints) == True).squeeze())
+       # for i, txt in enumerate(n):
+       #     ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0], anns[0]['keypoints'][txt, 1]), c='w')
+       # plt.show()
 
        # preprocess image and annotations
        img, anns, meta = self.preprocess(img, anns, meta)

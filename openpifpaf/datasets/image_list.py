@@ -181,49 +181,38 @@ class ImageList_Nyu(torch.utils.data.Dataset):
 
 
 class ImageList_OneHand10K(torch.utils.data.Dataset):
-    def __init__(self, image_dir, mode, preprocess=None):
-        self.image_dir = image_dir
-        if mode == 'evaluation':
-            self.mode = 'Test'
-        else:
-            raise AssertionError('evaluation mode not defined!')
+    def __init__(self, image_paths, preprocess=None):
+        self.image_paths = image_paths
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
-        # load all annotations, widths, heights
-        self.names = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',', usecols=0,
-                                   dtype=str)
-        keypoints = np.genfromtxt('{}/{}/label_joint.txt'.format(self.image_dir, self.mode), delimiter=',')[:, 4:]
-        self.keypoints = keypoints.reshape(keypoints.shape[0], int(keypoints.shape[1] / 2), 2)
 
     def __getitem__(self, index):
-        # load image
-        with open('/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/source/{}'.format(self.mode, self.names[index]),
-                  'rb') as f:
-            img = Image.open(f).convert('RGB')
-        # annotation for this frame
-        bool_invisible_keypoints = np.logical_or(self.keypoints[index, :, 0] == -1, self.keypoints[index, :, 1] == -1)
-        visibility_flag = 2.
-        anns = [{'keypoints': np.hstack((self.keypoints[index, :, :],
-                                         np.expand_dims(visibility_flag * (np.invert(bool_invisible_keypoints)),
-                                                        axis=1)))}]
-        anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
-        anns[0].update({'iscrowd': 0})
+        image_path = self.image_paths[index]
+        with open(image_path, 'rb') as f:
+            img = PIL.Image.open(f).convert('RGB')
+
+        anns = []
+
         # rescale image
         order = 1  # order of resize interpolation; 1 means linear interpolation
         w, h = img.size
         # keep aspect ratio the same
-        target_min_edge = 224
-        min_edge = min(h, w)
-        ratio_factor = target_min_edge / min_edge
+        reference_edge = 224
+        target_max_edge = reference_edge
+        max_edge = max(h, w)
+        ratio_factor = target_max_edge / max_edge
         target_h = int(ratio_factor * h)
         target_w = int(ratio_factor * w)
         im_np = np.asarray(img)
         im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
         img = PIL.Image.fromarray(im_np)
+        LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
         assert img.size[0] == target_w
         assert img.size[1] == target_h
+
         # rescale keypoints
-        x_scale = (img.size[0] - 1) / (w - 1)
-        y_scale = (img.size[1] - 1) / (h - 1)
+        x_scale = (img.size[0]) / (w)
+        y_scale = (img.size[1]) / (h)
+        # anns2 = copy.deepcopy(anns)
         for ann in anns:
             ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
             ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
@@ -231,43 +220,76 @@ class ImageList_OneHand10K(torch.utils.data.Dataset):
             ann['bbox'][1] *= y_scale
             ann['bbox'][2] *= x_scale
             ann['bbox'][3] *= y_scale
-        meta = None
 
-        # preprocess image and annotations
-        img, anns, meta = self.preprocess(img, anns, meta)
+        # pad frames
+        img = np.asarray(img)
+        pad_up = (reference_edge - img.shape[0]) // 2
+        pad_down = (reference_edge - img.shape[0]) // 2
+        pad_left = (reference_edge - img.shape[1]) // 2
+        pad_right = (reference_edge - img.shape[1]) // 2
+        img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+        for ann in anns:
+            # modify for pad
+            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
+            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
+            ann['bbox'][0] += pad_left
+            ann['bbox'][1] += pad_up
+            ann['bbox'][2] += pad_left
+            ann['bbox'][3] += pad_up
+
+        image, anns, meta = self.preprocess(image, anns, None)
         meta.update({
             'dataset_index': index,
-            'file_name': '/home/mahdi/HVR/git_repos/openpifpaf/OneHand10K/{}/source/{}'.format(self.mode, self.names[index]),
+            'file_name': image_path,
         })
-        return img, anns, meta
+
+        return image, anns, meta
 
     def __len__(self):
-        return len(self.names)
+        return len(self.image_paths)
+
 
 class ImageList_RHD(torch.utils.data.Dataset):
-    def __init__(self, image_dir, mode, preprocess=None):
-        self.image_dir = image_dir
+    def __init__(self, image_paths, mode='predict_list', preprocess=None):
+        self.image_paths = image_paths
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
-        if mode == 'evaluation':
-            self.mode = mode  # 'evaluation' or 'training'
+
+        if mode == 'predict_list':
+            self.mode = mode
+            # TODO modify
+            with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/RHD_published_v2/evaluation/anno_evaluation.pickle', 'rb') as fi:
+                self.anno_all = pickle.load(fi)
+        elif mode == 'evaluation':
+            self.mode = mode
+            # load all annotations of this mode
+            with open(os.path.join(self.image_paths, self.mode, 'anno_%s.pickle' % self.mode), 'rb') as fi:
+                self.anno_all = pickle.load(fi)
         else:
-            raise AssertionError('for prediction, mode must be evaluation!')
-        # load all annotations of this mode
-        with open(os.path.join(self.image_dir, self.mode, 'anno_%s.pickle' % self.mode), 'rb') as fi:
-            self.anno_all = pickle.load(fi)
+            raise AssertionError('mode not defined!')
+        self.index = []
 
     def __getitem__(self, index):
-        # load image
-        with open(os.path.join(self.image_dir, self.mode, 'color', '%.5d.png' % index), 'rb') as f:
-            img = Image.open(f).convert('RGB')
+        # index=3
 
-        # # annotation for this frame
-        # anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]
-        # anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
-        # anns[0].update({'iscrowd': 0})
+        if self.mode== 'predict_list':
+            image_path = self.image_paths[index]
+            # image_path = self.image_paths[0]
+            with open(image_path, 'rb') as f:
+                img = PIL.Image.open(f).convert('RGB')
+        elif self.mode== 'evaluation':
+            # load image
+            with open(os.path.join(self.image_paths, self.mode, 'color', '%.5d.png' % index), 'rb') as f:
+                img = Image.open(f).convert('RGB')
 
+        # # uncomment for mode predict_list
+        # index=3
+
+        # annotation for this frame
+        visibility_flag = 2
+        self.anno_all[index]['uv_vis'][:, 2] = visibility_flag*self.anno_all[index]['uv_vis'][:,2]
         # uncomment to combine left and right hand to one type
-        if np.any(self.anno_all[index]['uv_vis'][:21, :]) and np.any(self.anno_all[index]['uv_vis'][21:, :]):
+        if np.any(self.anno_all[index]['uv_vis'][:21, 2]) and np.any(self.anno_all[index]['uv_vis'][21:, 2]):
             anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
             anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
             anns = list([anns_left_hand[0], anns_right_hand[0]])
@@ -275,12 +297,12 @@ class ImageList_RHD(torch.utils.data.Dataset):
             anns[0].update({'iscrowd': 0})
             anns[1].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
             anns[1].update({'iscrowd': 0})
-        elif np.any(self.anno_all[index]['uv_vis'][:21, :]):
+        elif np.any(self.anno_all[index]['uv_vis'][:21, 2]):
             anns_left_hand = [{'keypoints': self.anno_all[index]['uv_vis'][:21, :]}]
             anns = list([anns_left_hand[0]])
             anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
             anns[0].update({'iscrowd': 0})
-        elif np.any(self.anno_all[index]['uv_vis'][21:, :]):
+        elif np.any(self.anno_all[index]['uv_vis'][21:, 2]):
             anns_right_hand = [{'keypoints': self.anno_all[index]['uv_vis'][21:, :]}]
             anns = list([anns_right_hand[0]])
             anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
@@ -293,8 +315,8 @@ class ImageList_RHD(torch.utils.data.Dataset):
         # ax[0].imshow(np.asarray(img))
         # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2]==2
         # ax[0].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1], 'ro')
-        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
-        # ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
+        # # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        # # ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
 
         # rescale image
         order = 1  # order of resize interpolation; 1 means linear interpolation
@@ -311,6 +333,19 @@ class ImageList_RHD(torch.utils.data.Dataset):
         img = PIL.Image.fromarray(im_np)
         assert img.size[0] == target_w
         assert img.size[1] == target_h
+
+        # rescale keypoints
+        x_scale = (img.size[0]) / (w)
+        y_scale = (img.size[1]) / (h)
+        # anns2 = copy.deepcopy(anns)
+        for ann in anns:
+            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
+            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
+            ann['bbox'][0] *= x_scale
+            ann['bbox'][1] *= y_scale
+            ann['bbox'][2] *= x_scale
+            ann['bbox'][3] *= y_scale
+
         # pad frames
         img = np.asarray(img)
         pad_up = (reference_edge - img.shape[0]) // 2
@@ -319,16 +354,7 @@ class ImageList_RHD(torch.utils.data.Dataset):
         pad_right = (reference_edge - img.shape[1]) // 2
         img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
         img = Image.fromarray(img.astype('uint8'), 'RGB')
-        # rescale keypoints
-        x_scale = (img.size[0] - 1) / (w - 1)
-        y_scale = (img.size[1] - 1) / (h - 1)
         for ann in anns:
-            ann['keypoints'][:, 0] = ann['keypoints'][:, 0] * x_scale
-            ann['keypoints'][:, 1] = ann['keypoints'][:, 1] * y_scale
-            ann['bbox'][0] *= x_scale
-            ann['bbox'][1] *= y_scale
-            ann['bbox'][2] *= x_scale
-            ann['bbox'][3] *= y_scale
             # modify for pad
             ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
             ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
@@ -341,25 +367,35 @@ class ImageList_RHD(torch.utils.data.Dataset):
         # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2] == 2
         # ax[1].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1],
         #            'ro')
-        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
-        # ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
-        #            'go')
+        # # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        # # ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
+        # #            'go')
         # plt.show()
 
-        meta = None
 
-        # preprocess image and annotations
-        img, anns, meta = self.preprocess(img, anns, meta)
+        img, anns, meta = self.preprocess(img, anns, None)
 
-        meta.update({
-            'dataset_index': index,
-            'file_name': (self.image_dir + '/' + self.mode + '/color/' + '%.5d.png' % index),
-        })
+        if self.mode == 'evaluation':
+            meta.update({
+                'dataset_index': index,
+                'file_name': os.path.join(self.image_paths, self.mode, 'color', '%.5d.png' % index),
+            })
+        elif self.mode == 'predict_list':
+            meta.update({
+                'dataset_index': index,
+                'file_name': self.image_paths[0],
+            })
+
 
         return img, anns, meta
 
     def __len__(self):
-        return len(self.anno_all)
+        if self.mode == 'predict_list':
+            return len(self.image_paths)
+        elif self.mode == 'evaluation':
+            return self.anno_all.__len__()
+        else:
+            raise AssertionError('mode not defined!')
 
 
 
