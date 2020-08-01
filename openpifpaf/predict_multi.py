@@ -406,10 +406,10 @@ def rhd_multi_predict(checkpoint_name, eval_dataset):
             percent_completed=b/data.__len__()*100
             print('progress = {:.2f}'.format(percent_completed))
     print('failure_counter = {}'.format(failure_counter))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/index_array_{}.npy'.format(checkpoint_name),index_array)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/pred_array_{}.npy'.format(checkpoint_name),pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/index_array.npy'.format(checkpoint_name),index_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/pred_array.npy'.format(checkpoint_name),pred_array)
     np.save(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/gt_array_{}.npy'.format(checkpoint_name), gt_array)
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/gt_array.npy'.format(checkpoint_name), gt_array)
 
 
 def onehand10k_multi_predict(checkpoint_name, eval_dataset):
@@ -686,13 +686,13 @@ def PCK_plot(checkpoint_name, eval_dataset):
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs.npy'.format(
         eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCK_fingers.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers.npy'.format(
         eval_dataset, checkpoint_name), y_joints)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_PCK_thresh.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh.npy'.format(
         eval_dataset, checkpoint_name), PCK_thresh)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_y.npy'.format(eval_dataset,
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
                                                                                                         checkpoint_name),
             y)
 
@@ -724,7 +724,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     axes.set_ylim([0, 1])
     axes.set_xlim([0, max_error])
     plt.savefig(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/2DPCK_{}.png'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK.png'.format(eval_dataset,
                                                                                                         checkpoint_name),
         format='png')
     # plt.show()
@@ -743,7 +743,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     axes2.legend()
     axes2.set_ylim([0, 1])
     axes2.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/2DPCK_{}_joints.png'.format(
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_joints.png'.format(
         eval_dataset, checkpoint_name), format='png')
     # plt.show()
     print('PCK_plot Successfully Ended!')
@@ -751,15 +751,18 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
 def PCK_normalized_plot(checkpoint_name, eval_dataset):
     pred_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(
             eval_dataset, checkpoint_name))
     gt_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
     index_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/index_array_{}.npy'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
+    assert pred_array.shape[0] == gt_array.shape[0]
+    assert index_array.shape[0] == gt_array.shape[0]
 
+    # TODO are these hflip correction necessary?
     pred_array_correct = np.copy(pred_array)
     pred_array_correct[:, 4, :] = pred_array[:, 20, :]
     pred_array_correct[:, 3, :] = pred_array[:, 19, :]
@@ -872,13 +875,13 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_{}_2DPCKvsPXLs.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCKvsPXLs.npy'.format(
         eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_{}_2DPCK_fingers.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_fingers.npy'.format(
         eval_dataset, checkpoint_name), y_joints)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_{}_PCK_thresh.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_PCK_thresh.npy'.format(
         eval_dataset, checkpoint_name), PCK_thresh)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_{}_y.npy'.format(eval_dataset,
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_y.npy'.format(eval_dataset,
                                                                                                         checkpoint_name),
             y)
 
@@ -897,7 +900,7 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
     # y = handPifPaf_paper_2DPCK_PXLs_freihand[1, :]
 
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
 
 
     axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
@@ -916,12 +919,12 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     axes.set_xlim([0, max_error])
 
     plt.savefig(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_2DPCK_{}.png'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK.png'.format(eval_dataset,
                                                                                                         checkpoint_name),
         format='png')
     plt.show()
 
-    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
     axes2.plot(PCK_thresh, y_joints[0, :], label='{}'.format(FREIHAND_KEYPOINTS[0]), c='k')
     cm = plt.get_cmap('tab20')
     axes2.set_prop_cycle(color=[cm(1. * i / 21) for i in range(21)])
@@ -935,7 +938,7 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     axes2.legend()
     axes2.set_ylim([0, 1])
     axes2.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/normalized_2DPCK_{}_joints.png'.format(
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_joints.png'.format(
         eval_dataset, checkpoint_name), format='png')
     plt.show()
     print('PCK_plot Successfully Ended!')
@@ -1000,7 +1003,8 @@ if __name__ == '__main__':
     # freihand_multi_predict(checkpoint_name, eval_dataset)
     # checkpoint_name = 'shufflenetv2k16w-200730-095321-cif-caf-caf25-edge200-o10s.pkl.epoch067'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch094'
-    checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch240'
+    # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch240'
+    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch117'
     eval_dataset = 'rhd'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
     PCK_normalized_plot(checkpoint_name, eval_dataset)

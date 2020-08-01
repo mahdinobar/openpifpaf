@@ -211,29 +211,29 @@ def main():
 
                     cpu_image = Image.fromarray(img.astype('uint8'), 'RGB')
 
-                    import matplotlib.pyplot as plt
-                    fig, ax = plt.subplots(1, 1, figsize=(12, 12))
-                    ax.imshow(np.asarray(img))
-                    # bool_annotated_joints_1 = _anns[0][0]['keypoints'][:, 2] == 2
-                    ax.plot(_anns[0][1]['keypoints'][:, 0],
-                               _anns[0][1]['keypoints'][:, 1], 'ro')
-                    ax.plot(pred[0].data[:, 0],
-                               pred[0].data[:, 1], 'bx')
-
-                    ax.plot(_anns[0][0]['keypoints'][:, 0],
-                               _anns[0][0]['keypoints'][:, 1], 'ro')
-                    ax.plot(pred[1].data[:, 0],
-                               pred[1].data[:, 1], 'bx')
-                    for txt in range(0, 21):
-                        ax.annotate(txt, (_anns[0][1]['keypoints'][txt, 0]-3, _anns[0][1]['keypoints'][txt, 1]-3), c='r')
-                        ax.annotate(txt, (pred[0].data[txt, 0]+3, pred[0].data[txt, 1]+3), c='b')
-
-                        ax.annotate(txt, (_anns[0][0]['keypoints'][txt, 0] - 3, _anns[0][0]['keypoints'][txt, 1] - 3),
-                                    c='r')
-                        ax.annotate(txt, (pred[1].data[txt, 0] + 3, pred[1].data[txt, 1] + 3), c='b')
-
-
-                    plt.show()
+                    # import matplotlib.pyplot as plt
+                    # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+                    # ax.imshow(np.asarray(img))
+                    # # bool_annotated_joints_1 = _anns[0][0]['keypoints'][:, 2] == 2
+                    # ax.plot(_anns[0][1]['keypoints'][:, 0],
+                    #            _anns[0][1]['keypoints'][:, 1], 'ro')
+                    # ax.plot(pred[0].data[:, 0],
+                    #            pred[0].data[:, 1], 'bx')
+                    #
+                    # ax.plot(_anns[0][0]['keypoints'][:, 0],
+                    #            _anns[0][0]['keypoints'][:, 1], 'ro')
+                    # ax.plot(pred[1].data[:, 0],
+                    #            pred[1].data[:, 1], 'bx')
+                    # for txt in range(0, 21):
+                    #     ax.annotate(txt, (_anns[0][1]['keypoints'][txt, 0]-3, _anns[0][1]['keypoints'][txt, 1]-3), c='r')
+                    #     ax.annotate(txt, (pred[0].data[txt, 0]+3, pred[0].data[txt, 1]+3), c='b')
+                    #
+                    #     ax.annotate(txt, (_anns[0][0]['keypoints'][txt, 0] - 3, _anns[0][0]['keypoints'][txt, 1] - 3),
+                    #                 c='r')
+                    #     ax.annotate(txt, (pred[1].data[txt, 0] + 3, pred[1].data[txt, 1] + 3), c='b')
+                    #
+                    #
+                    # plt.show()
 
 
             visualizer.BaseVisualizer.image(cpu_image)
