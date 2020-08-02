@@ -44,14 +44,13 @@ class Rhd(torch.utils.data.Dataset):
         visibility_flag = 2
         self.anno_all[index]['uv_vis'][:, 2] = visibility_flag*self.anno_all[index]['uv_vis'][:,2]
 
-        # for debug
+        # # for debug count unannotated
         # unannotated_frame = []
-        # self.anno_all[index]['uv_vis'][:, 2] = visibility_flag*self.anno_all[index]['uv_vis'][:,2]
         # for k in range(0, self.anno_all.__len__()):
-        #     if sum(self.anno_all[k]['uv_vis'][:,2]==0)==40:
+        #     if sum(self.anno_all[k]['uv_vis'][21:,2]==0)==21:
         #         unannotated_frame.append(k)
         #         print ('FOUND UNANNOTATED!!')
-
+        # print('% ', unannotated_frame.__len__()/self.anno_all.__len__()*100)
 
         # # uncomment to separate left and right hand TODO removal of unannotated annotations
         # anns = [{'keypoints':  self.anno_all[index]['uv_vis']}]

@@ -141,3 +141,37 @@ if __name__ == '__main__':
     main()
 
 
+# --lr=0.001
+# --epochs=150
+# --lr-decay
+# 50
+# 100
+# --lr-decay-epochs=10
+# --batch-size=1
+# --weight-decay=1e-5
+# --update-batchnorm-runningstatistics
+# --basenet=shufflenetv2k16w
+# --headnets
+# cif
+# caf
+# caf25
+# --lambdas
+# 1
+# 1
+# 0.2
+# 1
+# 1
+# 1
+# 0.2
+# 0.2
+# 1
+# 1
+# 1
+# 0.2
+# 0.2
+# --dataset=rhd
+# --square-edge=200
+# --lr-warm-up-epochs=3
+# --orientation-invariant=0.5
+# --loader-workers=0
+

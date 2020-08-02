@@ -566,13 +566,13 @@ def freihand_multi_predict_google(checkpoint_name, eval_dataset, mode = 'evaluat
 
 def PCK_plot(checkpoint_name, eval_dataset):
     pred_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(
             eval_dataset, checkpoint_name))
     gt_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
     index_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/index_array_{}.npy'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
 
     pred_array_correct = np.copy(pred_array)
@@ -602,13 +602,14 @@ def PCK_plot(checkpoint_name, eval_dataset):
         total_counted_data_fingers = np.zeros(21)
         total_correct_data_fingers = np.zeros(21)
 
+        correction_factor_rhd_resize = (320 / 224)
         for data_id in range(0, pred_array.shape[0]):
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
             bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (
                         gt_array[data_id, :, 2] > gt_conf_thresh)
             _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
-            _norms = np.linalg.norm(_errors, axis=1)
+            _norms = np.linalg.norm(_errors, axis=1)*correction_factor_rhd_resize
 
 # # ---------------------------------------------------------------------------
 #             with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/RHD_published_v2/evaluation/color/%.5d.png' %
@@ -656,7 +657,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
             for joint_id in range(0, 21):
                 if bool_acceptable_data[joint_id] == True:
                     _error = pred_array[data_id, joint_id, :2] - gt_array[data_id, joint_id, :2]
-                    _norm = np.linalg.norm(_error, axis=0)
+                    _norm = np.linalg.norm(_error, axis=0)*correction_factor_rhd_resize
                     total_correct_data_fingers[joint_id] = total_correct_data_fingers[joint_id] + sum(
                         [_norm] < PCK_thresh)
                     total_counted_data_fingers[joint_id] = total_counted_data_fingers[joint_id] + 1
@@ -696,26 +697,67 @@ def PCK_plot(checkpoint_name, eval_dataset):
                                                                                                         checkpoint_name),
             y)
 
-    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCK_fingers.npy'.format(
+    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers.npy'.format(
     #     eval_dataset, checkpoint_name))
-    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_PCK_thresh.npy'.format(
+    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh.npy'.format(
     #     eval_dataset, checkpoint_name))
-    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_y.npy'.format(eval_dataset,
+    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
     #                                                                                                     checkpoint_name))
 
     # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
 
+    CPM_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    CPM_2DPCKvsPXLs = np.vstack((np.sort(CPM_2DPCKvsPXLs[:, 0]), np.sort(CPM_2DPCKvsPXLs[:, 1]))).T
+    CPM_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    CPM_gt_2DPCKvsPXLs = np.vstack((np.sort(CPM_gt_2DPCKvsPXLs[:, 0]), np.sort(CPM_gt_2DPCKvsPXLs[:, 1]))).T
+    CPMAtt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    CPMAtt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_2DPCKvsPXLs[:, 1]))).T
+    CPMAtt_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    CPMAtt_gt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 1]))).T
+    RGBPI_2DPCKvsPXLs = np.genfromtxt(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/RGBPI_2DPCKvsPXLs.csv'.format(
+            eval_dataset), delimiter=',')
+    RGBPI_2DPCKvsPXLs = np.vstack((np.sort(RGBPI_2DPCKvsPXLs[:, 0]), np.sort(RGBPI_2DPCKvsPXLs[:, 1]))).T
+    Wang1_2DPCKvsPXLs = np.genfromtxt(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang1_2DPCKvsPXLs.csv'.format(
+            eval_dataset), delimiter=',')
+    Wang1_2DPCKvsPXLs = np.vstack((np.sort(Wang1_2DPCKvsPXLs[:, 0]), np.sort(Wang1_2DPCKvsPXLs[:, 1]))).T
+    Wang2_2DPCKvsPXLs = np.genfromtxt(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang2_2DPCKvsPXLs.csv'.format(
+            eval_dataset), delimiter=',')
+    Wang2_2DPCKvsPXLs = np.vstack((np.sort(Wang2_2DPCKvsPXLs[:, 0]), np.sort(Wang2_2DPCKvsPXLs[:, 1]))).T
+
+
+
     # handPifPaf_paper_2DPCK_PXLs_freihand = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name))
     # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
     # y = handPifPaf_paper_2DPCK_PXLs_freihand[1, :]
 
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+
+
+    from sklearn.metrics import auc
+    AUC = auc(PCK_thresh, np.asarray(y))/max_error
+    AUC2 = auc(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1])/(max(RGBPI_2DPCKvsPXLs[:, 0])-min(RGBPI_2DPCKvsPXLs[:,0]))
+
+    print('AUC of 2PCKvsPX is =',AUC)
+
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(12, 8))
     axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
     # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
     # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
     # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
+    axes.plot(CPM_2DPCKvsPXLs[:, 0], CPM_2DPCKvsPXLs[:, 1], label='CPM', c='green')
+    axes.plot(CPM_gt_2DPCKvsPXLs[:, 0], CPM_gt_2DPCKvsPXLs[:, 1], label='CPM_gt', c='orange')
+    axes.plot(CPMAtt_2DPCKvsPXLs[:, 0], CPMAtt_2DPCKvsPXLs[:, 1], label='CPMAtt', c='olive')
+    axes.plot(CPMAtt_gt_2DPCKvsPXLs[:, 0], CPMAtt_gt_2DPCKvsPXLs[:, 1], label='CPMAtt_gt', c='m')
+    axes.plot(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1], label='RGB+PI', c='brown')
+    axes.plot(Wang1_2DPCKvsPXLs[:, 0], Wang1_2DPCKvsPXLs[:, 1], label='Wang1', c='red')
+    axes.plot(Wang2_2DPCKvsPXLs[:, 0], Wang2_2DPCKvsPXLs[:, 1], label='Wang2', c='black')
+
+
+
     axes.set_xlabel('Error Threshold [px]')
     axes.set_ylabel('2D PCK')
     axes.set_title('Percentage of Correct Key-points vs Error Threshold')
@@ -727,9 +769,9 @@ def PCK_plot(checkpoint_name, eval_dataset):
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK.png'.format(eval_dataset,
                                                                                                         checkpoint_name),
         format='png')
-    # plt.show()
+    plt.show()
 
-    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(12, 8))
     axes2.plot(PCK_thresh, y_joints[0, :], label='{}'.format(FREIHAND_KEYPOINTS[0]), c='k')
     cm = plt.get_cmap('tab20')
     axes2.set_prop_cycle(color=[cm(1. * i / 21) for i in range(21)])
@@ -745,7 +787,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     axes2.set_xlim([0, max_error])
     plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_joints.png'.format(
         eval_dataset, checkpoint_name), format='png')
-    # plt.show()
+    plt.show()
     print('PCK_plot Successfully Ended!')
 
 
@@ -885,11 +927,11 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
                                                                                                         checkpoint_name),
             y)
 
-    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_2DPCK_fingers.npy'.format(
+    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_2DPCK_fingers.npy'.format(
     #     eval_dataset, checkpoint_name))
-    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_PCK_thresh.npy'.format(
+    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_PCK_thresh.npy'.format(
     #     eval_dataset, checkpoint_name))
-    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_{}_y.npy'.format(eval_dataset,
+    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_y.npy'.format(eval_dataset,
     #                                                                                                     checkpoint_name))
 
     # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
@@ -994,6 +1036,34 @@ def pose_dataset_multi_predict_google():
 
     np.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations/google_annot_array.npy', google_annot_array)
 
+def pose_dataset_multi_predict_google_confirmation():
+    annot_pose_dataset_after_modification = np.load(
+        '/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations/pose_dataset_annotations/google_annot_array_after_modification.npy')
+    counter=0
+    error_counter = 0
+    unannotated_counter = 0
+    for index in range(0, annot_pose_dataset_after_modification.shape[0]):
+        counter+=1
+        pred = annot_pose_dataset_after_modification[index,:,:]
+        if pred[0,0]==-1:
+            unannotated_counter += 1
+            continue
+        try:
+            with open('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/{:07}'.format(index + 1), 'rb') as f:
+                img = PIL.Image.open(f).convert('RGB')
+
+            draw = ImageDraw.Draw(img)
+            for annot_id in range(0, 21):
+                draw.ellipse((pred[annot_id, 0] - 4, pred[annot_id, 1] - 4, pred[annot_id, 0] + 4, pred[annot_id, 1] + 4),
+                             fill='green', outline='green')
+        except:
+            error_counter+=1
+            continue
+        img.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations_confirmation/images/{:07}.png'.format(index + 1))
+        percent_completed = counter / ( annot_pose_dataset_after_modification.shape[0]) * 100
+        print('progress = {:.2f}, total error={}'.format(percent_completed, error_counter))
+
+    print('ended')
 
 if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch172'
@@ -1004,10 +1074,12 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200730-095321-cif-caf-caf25-edge200-o10s.pkl.epoch067'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch094'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch240'
-    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch117'
+    # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch117'
+    # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch146'
+    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
     eval_dataset = 'rhd'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
-    PCK_normalized_plot(checkpoint_name, eval_dataset)
+    # PCK_normalized_plot(checkpoint_name, eval_dataset)
     # PCK_plot(checkpoint_name, eval_dataset)
 
 
@@ -1016,6 +1088,7 @@ if __name__ == '__main__':
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
     # pose_dataset_multi_predict_google()
+    pose_dataset_multi_predict_google_confirmation()
 
 
 # the best model handPifPaf name: shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch172
