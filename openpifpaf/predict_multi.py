@@ -1076,19 +1076,20 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch240'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch117'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch146'
-    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
+    # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
+    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
     eval_dataset = 'rhd'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
     # PCK_normalized_plot(checkpoint_name, eval_dataset)
-    # PCK_plot(checkpoint_name, eval_dataset)
+    PCK_plot(checkpoint_name, eval_dataset)
 
 
     # onehand10k_multi_predict(checkpoint_name, eval_dataset)
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
-    # pose_dataset_multi_predict_google()
-    pose_dataset_multi_predict_google_confirmation()
+    # # pose_dataset_multi_predict_google()
+    # pose_dataset_multi_predict_google_confirmation()
 
 
 # the best model handPifPaf name: shufflenetv2k16w-200724-004154-cif-caf-caf25-edge200.pkl.epoch172

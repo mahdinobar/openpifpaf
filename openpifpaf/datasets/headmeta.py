@@ -49,12 +49,22 @@ from .rhd_constants import (
     RHD_KINEMATIC_TREE_SKELETON,
 )
 
+from .posedataset_constants import (
+    POSEDATASET_CATEGORIES,
+    POSEDATASET_KEYPOINTS,
+    POSEDATASET_HAND_SKELETON,
+    POSEDATASET_HAND_SIGMAS,
+    POSEDATASET_UPRIGHT_POSE,
+    DENSER_POSEDATASET_HAND_CONNECTIONS,
+    POSEDATASET_KINEMATIC_TREE_SKELETON,
+)
+
 
 def factory(head_names):
     if head_names is None:
         return None
-    # uncomment for coco dataset
-    return [factory_single(hn) for hn in head_names]
+    # # uncomment for coco dataset
+    # return [factory_single(hn) for hn in head_names]
     # # uncomment for freihand dataset
     # return [factory_single_freihand(hn) for hn in head_names]
     # # uncomment for rhd dataset
@@ -63,6 +73,8 @@ def factory(head_names):
     # return [factory_single_onehand10k(hn) for hn in head_names]
     # # uncomment for nyu dataset
     # return [factory_single_nyu(hn) for hn in head_names]
+    # uncomment for posedataset dataset
+    return [factory_single_posedataset(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:
@@ -126,6 +138,38 @@ def factory_single_freihand(head_name):
                                FREIHAND_UPRIGHT_POSE,
                                FREIHAND_HAND_SKELETON)
     raise NotImplementedError
+
+def factory_single_posedataset(head_name):
+    if 'cifdet' in head_name:
+        return DetectionMeta(head_name, POSEDATASET_CATEGORIES)
+    if 'pif' in head_name or 'cif' in head_name:
+        return IntensityMeta(head_name,
+                             POSEDATASET_KEYPOINTS,
+                             POSEDATASET_HAND_SIGMAS,
+                             POSEDATASET_UPRIGHT_POSE,
+                             POSEDATASET_HAND_SKELETON)
+    if 'caf25' in head_name:
+        return AssociationMeta(head_name,
+                               POSEDATASET_KEYPOINTS,
+                               POSEDATASET_HAND_SIGMAS,
+                               POSEDATASET_UPRIGHT_POSE,
+                               DENSER_POSEDATASET_HAND_CONNECTIONS,
+                               sparse_skeleton=POSEDATASET_HAND_SKELETON,
+                               only_in_field_of_view=True)
+    if 'caf16' in head_name:
+        return AssociationMeta(head_name,
+                               POSEDATASET_KEYPOINTS,
+                               POSEDATASET_HAND_SIGMAS,
+                               POSEDATASET_UPRIGHT_POSE,
+                               POSEDATASET_KINEMATIC_TREE_SKELETON)
+    if head_name == 'caf':
+        return AssociationMeta(head_name,
+                               POSEDATASET_KEYPOINTS,
+                               POSEDATASET_HAND_SIGMAS,
+                               POSEDATASET_UPRIGHT_POSE,
+                               POSEDATASET_HAND_SKELETON)
+    raise NotImplementedError
+
 
 def factory_single_nyu(head_name):
     if 'cifdet' in head_name:
