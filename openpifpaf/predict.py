@@ -158,7 +158,7 @@ def main():
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList_RHD(args.images, preprocess=preprocess)
+    data = datasets.ImageList_PoseDataset(args.images, preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -184,9 +184,8 @@ def main():
                 with open(meta['file_name'], 'rb') as f:
                     cpu_image = PIL.Image.open(f).convert('RGB')
 
-                    # uncomment for rhd
+                    # uncomment for PoseDataset
                     img = cpu_image
-                    # rescale image
                     order = 1  # order of resize interpolation; 1 means linear interpolation
                     w, h = img.size
                     # keep aspect ratio the same

@@ -25,18 +25,84 @@ class Posedataset(torch.utils.data.Dataset):
         self.mode = mode # 'evaluation' or 'training'
         self.target_transforms = target_transforms
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+
+        _all_names = np.load('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir))
+        _all_annots = np.load('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir))
+
+        # remove repeated frames 1
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset.csv'.format(self.image_dir), delimiter=',')[1:, 0].astype(int)
+        _wrong_names_str = []
+        for w in range(0, _wrong_names.__len__()):
+            _wrong_names_str.append("{:07}".format(_wrong_names[w]))
+
+        _wrong_names_str = np.asarray(_wrong_names_str)
+
+        for ww in range(0, _wrong_names.__len__()):
+            arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
+            if arg_wrong!=0:
+                _all_names = np.delete(_all_names, arg_wrong, 0)
+                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+
+        # remove repeated frames 2
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset_2.csv'.format(self.image_dir), delimiter=',')[1:, 0].astype(int)
+        _wrong_names_str = []
+        for w in range(0, _wrong_names.__len__()):
+            _wrong_names_str.append("{:07}".format(_wrong_names[w]))
+
+        _wrong_names_str = np.asarray(_wrong_names_str)
+
+        for ww in range(0, _wrong_names.__len__()):
+            arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
+            if arg_wrong!=0:
+                _all_names = np.delete(_all_names, arg_wrong, 0)
+                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+
+
+        # remove repeated frames 3
+        _wrong_names =  np.load('{}/annotations/wrong_correct_pose_dataset_3.npy'.format(self.image_dir))
+        _wrong_names_str = []
+        for w in range(0, _wrong_names.__len__()):
+            _wrong_names_str.append("{:07}".format(_wrong_names[w]))
+
+        _wrong_names_str = np.asarray(_wrong_names_str)
+
+        for ww in range(0, _wrong_names.__len__()):
+            arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
+            if arg_wrong!=0:
+                _all_names = np.delete(_all_names, arg_wrong, 0)
+                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+
+        # random split data
+        # from sklearn.model_selection import train_test_split
+        # annots_train, annots_test, names_train, names_test = train_test_split(_all_annots, _all_names, test_size = 0.20, shuffle=True)
+        #
+        # if self.mode=='training':
+        #     self.all_names = names_train
+        #     self.all_annots = annots_train
+        # elif self.mode=='evaluation':
+        #     self.all_names = names_test
+        #     self.all_annots = annots_test
+        # else:
+        #     raise AssertionError('dataset mode is not defined!')
+
+        # train with 2 subjects(~82% data; 23817 data; all correctly annotated frames from name 0000001 to 0026584) and test with the rest 13 subjects(~18% data; 4991 data)
         if self.mode=='training':
-            self.all_names = np.load('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir))
-            self.all_annots = np.load('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir))
+            self.all_names = _all_names[:np.argwhere(_all_names == '0026584')[0][0]]
+
+            self.all_annots = _all_annots[:np.argwhere(_all_names == '0026584')[0][0], : ,:]
+        elif self.mode=='evaluation':
+            self.all_names = _all_names[np.argwhere(_all_names == '0026584')[0][0]:]
+            self.all_annots = _all_annots[np.argwhere(_all_names == '0026584')[0][0]:, :, :]
         else:
             raise AssertionError('dataset mode is not defined!')
+
         # annotation for this frame
         visibility_flag = 2
         self.all_annots[:, :, 2] = visibility_flag * self.all_annots[:, :, 2]
 
     def __getitem__(self, index):
         # load image
-        with open('{}/images/{}.png'.format(self.image_dir, self.all_names[index])) as f:
+        with open('{}/images/{}'.format(self.image_dir, self.all_names[index]), 'rb') as f:
             img = Image.open(f).convert('RGB')
 
         anns = [{'keypoints': self.all_annots[index, :, :]}]
@@ -109,7 +175,7 @@ class Posedataset(torch.utils.data.Dataset):
         # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
         # ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
         #            'go')
-        # plt.show()
+            # plt.show()
 
         meta = None
 
@@ -136,4 +202,5 @@ class Posedataset(torch.utils.data.Dataset):
         return img, anns, meta
 
     def __len__(self):
+        print('self.all_names.shape[0]=',self.all_names.shape[0])
         return self.all_names.shape[0]

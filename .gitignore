@@ -59,3 +59,6 @@ openpifpaf/google_pose_estimator
 docs/nyu_references/
 nyu/
 openpifpaf/datasets/draft.py
+
+openpifpaf/pose_dataset
+pose_dataset

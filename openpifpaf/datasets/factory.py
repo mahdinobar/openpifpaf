@@ -29,7 +29,7 @@ COCO_IMAGE_DIR_TRAIN = 'data-mscoco/images/train2017/'
 COCO_IMAGE_DIR_VAL = 'data-mscoco/images/val2017/'
 
 FREIHAND_IMAGE_DIR_TRAIN = 'Freihand_pub_v2/'
-POSEDATASET_IMAGE_DIR_TRAIN = 'Posedataset_pub_v2/'
+POSEDATASET_IMAGE_DIR_TRAIN = 'pose_dataset'
 RHD_IMAGE_DIR_TRAIN = 'RHD_published_v2/'
 ONEHAND10K_IMAGE_DIR_TRAIN = 'OneHand10K'
 NYU_IMAGE_DIR_TRAIN = 'nyu/'

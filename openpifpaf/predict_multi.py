@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 # # uncomment for server
 # matplotlib.use('Agg')
-
+import copy
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
 
@@ -215,6 +215,126 @@ def freihand_multi_predict(checkpoint_name, eval_dataset):
 
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/pred_array_{}.npy'.format(eval_dataset, checkpoint_name), pred_array)
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset, checkpoint_name), gt_array)
+
+
+
+def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
+    args = cli()
+
+    processor, model = processor_factory(args)
+    preprocess = preprocess_factory(args)
+
+    # data
+    data = datasets.ImageList_PoseDataset_hvr(args.images[0], preprocess=preprocess)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers,
+        collate_fn=datasets.collate_images_anns_meta)
+
+    # visualizers
+    keypoint_painter = show.KeypointPainter(
+        color_connections=not args.monocolor_connections,
+        linewidth=args.line_width,
+    )
+    annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
+    B = 0
+    b = 0
+    hvr_pred_array = []
+    hvr_name_array = []
+
+    for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
+        pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
+
+        # unbatch
+        for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
+            b += 1
+            try:
+                # print('b={}'.format(b))
+                percent_completed=b/data.__len__()*100
+                print('progress = {:.2f}'.format(percent_completed))
+                # bar.next()
+                LOG.info('batch %d: %s', batch_i, meta['file_name'])
+
+                # load the original image if necessary
+                cpu_image = None
+                if args.debug or args.show or args.image_output is not None:
+                    with open(meta['file_name'], 'rb') as f:
+                        cpu_image = PIL.Image.open(f).convert('RGB')
+
+                visualizer.BaseVisualizer.image(cpu_image)
+                if preprocess is not None:
+                    pred = preprocess.annotations_inverse(pred, meta)
+
+                pred_hvr = np.copy(pred[0].data)
+
+
+
+                # # rescale image
+                # order = 1  # order of resize interpolation; 1 means linear interpolation
+                # w, h = img.size
+                # # keep aspect ratio the same
+                # reference_edge = 224
+                # target_max_edge = reference_edge
+                # max_edge = max(h, w)
+                # ratio_factor = target_max_edge / max_edge
+                # target_h = int(ratio_factor * h)
+                # target_w = int(ratio_factor * w)
+                # im_np = np.asarray(img)
+                # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                # img = PIL.Image.fromarray(im_np)
+                # assert img.size[0] == target_w
+                # assert img.size[1] == target_h
+                # # pad frames
+                # img = np.asarray(img)
+                # pad_up = (reference_edge - img.shape[0]) // 2
+                # pad_down = (reference_edge - img.shape[0]) // 2
+                # pad_left = (reference_edge - img.shape[1]) // 2
+                # pad_right = (reference_edge - img.shape[1]) // 2
+                # img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+
+                # import matplotlib.pyplot as plt
+                # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+                # ax.imshow(np.asarray(cpu_image))
+                # ax.set_title(meta['file_name'])
+                # rescale back keypoints
+                w=640
+                h=480
+                w_t=int(640*224/640)
+                h_t=int(480*224/640)
+                x_scale = (w_t) / (w)
+                y_scale = (h_t) / (h)
+
+                pred_hvr[:, 0]=pred_hvr[:, 0]/x_scale
+                pred_hvr[:, 1]=pred_hvr[:, 1]/y_scale
+
+                pad_up = (640 - h) // 2
+                # pad_down = (reference_edge - img.shape[0]) // 2
+                pad_left = (640 - w) // 2
+                # pad_right = (reference_edge - img.shape[1]) // 2
+                # img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+                # img = Image.fromarray(img.astype('uint8'), 'RGB')
+                # for ann in anns:
+                #     modify for pad
+                    # ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
+                    # ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
+                pred_hvr[:, 0]=pred_hvr[:, 0]-pad_left
+                pred_hvr[:, 1]=pred_hvr[:, 1]-pad_up
+
+                # ax.plot(pred_hvr[:, 0], pred_hvr[:, 1], 'ro')
+                # plt.show()
+
+                # error = pred[0].data - gt[0]['keypoints']
+
+                if pred_hvr.shape==(21,3):
+                    hvr_pred_array.append(pred_hvr)
+                    hvr_name_array.append(meta['file_name'])
+
+            except:
+                pass
+
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/hvr_pred_array.npy'.format(eval_dataset, checkpoint_name), hvr_pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/hvr_name_array.npy'.format(eval_dataset, checkpoint_name), hvr_name_array)
+
 
 
 def onehand10k_multi_predict(checkpoint_name, eval_dataset):
@@ -993,13 +1113,13 @@ def pose_dataset_multi_predict_google():
     successful_flag = 1
     google_annot_array = []
     index_fail_google_annotation = []
-    total_raw_frames = 25789
-    for index in range(0, total_raw_frames):
+    total_raw_frames = 6002
+    for index in range(10763+10625+2000+1200+1201, 10763+10625+2000+1200+1201+total_raw_frames):
     # total_raw_frames = 4
     # for index in range(3000, 3004):
         try:
             b += 1
-            with open('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/{:07}'.format(index+1), 'rb') as f:
+            with open('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/images/{:07}'.format(index+1), 'rb') as f:
                 img = PIL.Image.open(f).convert('RGB')
 
             img = np.asarray(img)
@@ -1015,7 +1135,7 @@ def pose_dataset_multi_predict_google():
             for annot_id in range(0,21):
                 draw.ellipse((pred[annot_id,0]-4, pred[annot_id,1]-4, pred[annot_id,0]+4, pred[annot_id,1]+4), fill='red', outline='red')
             # draw.ellipse((20, 20, 30, 30), fill = 'red', outline ='red')
-            img.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations/images/{:07}.png'.format(index+1))
+            img.save('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/annotations/preview_annotated_images/{:07}.png'.format(index+1))
             percent_completed = b / (total_raw_frames) * 100
             print('progress = {:.2f}, total error={}'.format(percent_completed, error_counter))
 
@@ -1034,22 +1154,22 @@ def pose_dataset_multi_predict_google():
         #     ax[0].annotate(txt, (pred[txt, 0], pred[txt, 1]), c='w')
         # plt.show()
 
-    np.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations/google_annot_array.npy', google_annot_array)
+    np.save('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/annotations/google_annot_array.npy', google_annot_array)
 
 def pose_dataset_multi_predict_google_confirmation():
-    annot_pose_dataset_after_modification = np.load(
-        '/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations/pose_dataset_annotations/google_annot_array_after_modification.npy')
+    all_annoted_frames_names = np.load('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/annotations/all_annoted_frames_names_joined.npy')
+    all_annoted_frames_annot = np.load('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/annotations/all_annoted_frames_annot_joined.npy')
     counter=0
     error_counter = 0
     unannotated_counter = 0
-    for index in range(0, annot_pose_dataset_after_modification.shape[0]):
+    for index in range(0, all_annoted_frames_annot.shape[0]):
         counter+=1
-        pred = annot_pose_dataset_after_modification[index,:,:]
+        pred = all_annoted_frames_annot[index,:,:]
         if pred[0,0]==-1:
             unannotated_counter += 1
             continue
         try:
-            with open('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/{:07}'.format(index + 1), 'rb') as f:
+            with open('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/images/{}'.format(all_annoted_frames_names[index]), 'rb') as f:
                 img = PIL.Image.open(f).convert('RGB')
 
             draw = ImageDraw.Draw(img)
@@ -1059,8 +1179,8 @@ def pose_dataset_multi_predict_google_confirmation():
         except:
             error_counter+=1
             continue
-        img.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations_confirmation/images/{:07}.png'.format(index + 1))
-        percent_completed = counter / ( annot_pose_dataset_after_modification.shape[0]) * 100
+        img.save('/home/mahdi/HVR/hvr/data/iPad/pose_dataset_annotations_confirmation/{}.png'.format(all_annoted_frames_names[index]))
+        percent_completed = counter / ( all_annoted_frames_annot.shape[0]) * 100
         print('progress = {:.2f}, total error={}'.format(percent_completed, error_counter))
 
     print('ended')
@@ -1071,24 +1191,29 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200725-113056-cif-caf-caf25-edge200.pkl.epoch320'
     # eval_dataset = 'onehand10k'
     # freihand_multi_predict(checkpoint_name, eval_dataset)
+
+    checkpoint_name = 'shufflenetv2k16w-200803-140030-cif-caf-caf25-edge200-o10s.pkl.epoch277'
+    eval_dataset = 'pose_dataset'
+    posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
+
     # checkpoint_name = 'shufflenetv2k16w-200730-095321-cif-caf-caf25-edge200-o10s.pkl.epoch067'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch094'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch240'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch117'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch146'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
-    checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
-    eval_dataset = 'rhd'
+    # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
+    # eval_dataset = 'posedataset'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
     # PCK_normalized_plot(checkpoint_name, eval_dataset)
-    PCK_plot(checkpoint_name, eval_dataset)
+    # PCK_plot(checkpoint_name, eval_dataset)
 
 
     # onehand10k_multi_predict(checkpoint_name, eval_dataset)
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
-    # # pose_dataset_multi_predict_google()
+    # pose_dataset_multi_predict_google()
     # pose_dataset_multi_predict_google_confirmation()
 
 

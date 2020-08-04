@@ -21,40 +21,6 @@ class ImageList(torch.utils.data.Dataset):
         with open(image_path, 'rb') as f:
             image = PIL.Image.open(f).convert('RGB')
 
-            # # rescale image
-            # order = 1  # order of resize interpolation; 1 means linear interpolation
-            # w, h = image.size
-            # # keep aspect ratio the same
-            # target_min_edge = 224
-            # min_edge = min(h, w)
-            # ratio_factor = target_min_edge / min_edge
-            # target_h = int(ratio_factor * h)
-            # target_w = int(ratio_factor * w)
-            # im_np = np.asarray(image)
-            # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-            # image = PIL.Image.fromarray(im_np)
-            # assert image.size[0] == target_w
-            # assert image.size[1] == target_h
-
-        # # rescale image
-        # order = 1  # order of resize interpolation; 1 means linear interpolation
-        # w, h = image.size
-        # target_max_edge = 320
-        # max_edge = max(h, w)
-        # ratio_factor = target_max_edge / max_edge
-        # target_h = int(ratio_factor * h)
-        # target_w = int(ratio_factor * w)
-        # im_np = np.asarray(image)
-        # image = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-        # # ax[1].imshow(image)
-        # pad_up = (320-image.shape[0])//2
-        # pad_down = (320-image.shape[0])//2
-        # pad_left = (320-image.shape[1])//2
-        # pad_right = (320-image.shape[1])//2
-        # image = np.pad(image, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-        # image = Image.fromarray(image.astype('uint8'), 'RGB')
-        # # ax[2].imshow(image)
-
 
         anns = []
         image, anns, meta = self.preprocess(image, anns, None)
@@ -67,6 +33,103 @@ class ImageList(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.image_paths)
+
+
+class ImageList_PoseDataset(torch.utils.data.Dataset):
+    def __init__(self, image_paths, preprocess=None):
+        self.image_paths = image_paths
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+        with open(image_path, 'rb') as f:
+            img = PIL.Image.open(f).convert('RGB')
+
+        # rescale image
+        order = 1  # order of resize interpolation; 1 means linear interpolation
+        w, h = img.size
+        # keep aspect ratio the same
+        reference_edge = 224
+        target_max_edge = reference_edge
+        max_edge = max(h, w)
+        ratio_factor = target_max_edge / max_edge
+        target_h = int(ratio_factor * h)
+        target_w = int(ratio_factor * w)
+        im_np = np.asarray(img)
+        im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        img = PIL.Image.fromarray(im_np)
+        assert img.size[0] == target_w
+        assert img.size[1] == target_h
+        # pad frames
+        img = np.asarray(img)
+        pad_up = (reference_edge - img.shape[0]) // 2
+        pad_down = (reference_edge - img.shape[0]) // 2
+        pad_left = (reference_edge - img.shape[1]) // 2
+        pad_right = (reference_edge - img.shape[1]) // 2
+        img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+
+
+        anns = []
+        img, anns, meta = self.preprocess(img, anns, None)
+        meta.update({
+            'dataset_index': index,
+            'file_name': image_path,
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return len(self.image_paths)
+
+
+class ImageList_PoseDataset_hvr(torch.utils.data.Dataset):
+    def __init__(self, image_paths, preprocess=None):
+        self.image_paths = image_paths
+        self.preprocess = preprocess or transforms.EVAL_TRANSFORM
+        self.all_RGB_names=np.load('{}/RGB_names.npy'.format(self.image_paths))
+
+    def __getitem__(self, index):
+        image_path = '{}'.format(self.all_RGB_names[index])
+        with open(image_path, 'rb') as f:
+            img = PIL.Image.open(f).convert('RGB')
+
+        # rescale image
+        order = 1  # order of resize interpolation; 1 means linear interpolation
+        w, h = img.size
+        # keep aspect ratio the same
+        reference_edge = 224
+        target_max_edge = reference_edge
+        max_edge = max(h, w)
+        ratio_factor = target_max_edge / max_edge
+        target_h = int(ratio_factor * h)
+        target_w = int(ratio_factor * w)
+        im_np = np.asarray(img)
+        im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+        img = PIL.Image.fromarray(im_np)
+        assert img.size[0] == target_w
+        assert img.size[1] == target_h
+        # pad frames
+        img = np.asarray(img)
+        pad_up = (reference_edge - img.shape[0]) // 2
+        pad_down = (reference_edge - img.shape[0]) // 2
+        pad_left = (reference_edge - img.shape[1]) // 2
+        pad_right = (reference_edge - img.shape[1]) // 2
+        img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+        img = Image.fromarray(img.astype('uint8'), 'RGB')
+
+
+        anns = []
+        img, anns, meta = self.preprocess(img, anns, None)
+        meta.update({
+            'dataset_index': index,
+            'file_name': '{}'.format(self.all_RGB_names[index]),
+        })
+
+        return img, anns, meta
+
+    def __len__(self):
+        return len(self.all_RGB_names)
 
 
 class PilImageList(torch.utils.data.Dataset):
@@ -87,7 +150,7 @@ class PilImageList(torch.utils.data.Dataset):
         return image, anns, meta
 
     def __len__(self):
-        return len(self.images)
+        return len(self.all_RGB_names)
 
 
 
@@ -137,6 +200,9 @@ class ImageList_Freihand(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.number_unique_imgs*self.number_version
+
+
+
 
 
 class ImageList_Nyu(torch.utils.data.Dataset):
