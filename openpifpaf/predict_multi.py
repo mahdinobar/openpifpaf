@@ -217,6 +217,124 @@ def freihand_multi_predict(checkpoint_name, eval_dataset):
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/gt_array_{}.npy'.format(eval_dataset, checkpoint_name), gt_array)
 
 
+def panoptic_multi_predict(checkpoint_name, eval_dataset):
+    args = cli()
+
+    processor, model = processor_factory(args)
+    preprocess = preprocess_factory(args)
+
+    # data
+    data = datasets.ImageList_Panoptic(image_dir=args.images[0], mode='test', preprocess=preprocess)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers,
+        collate_fn=datasets.collate_images_anns_meta)
+
+    # visualizers
+    keypoint_painter = show.KeypointPainter(
+        color_connections=not args.monocolor_connections,
+        linewidth=args.line_width,
+    )
+    annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
+    B = 0
+    b = 0
+    pred_array = []
+    gt_array = []
+
+    for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
+        pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
+
+        # unbatch
+        for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
+            b += 1
+            # print('b={}'.format(b))
+            percent_completed=b/data.__len__()*100
+            print('progress = {:.2f}'.format(percent_completed))
+            # bar.next()
+            LOG.info('batch %d: %s', batch_i, meta['file_name'])
+
+            # load the original image if necessary
+            cpu_image = None
+            if args.debug or args.show is not False:
+                with open(meta['file_name'], 'rb') as f:
+                    cpu_image = PIL.Image.open(f).convert('RGB')
+                    gt_before_preprocess = meta['gt_before_preprocess']
+                    # crop image
+                    max_gt_bbx = max(max(gt_before_preprocess[:, 0]) - min(gt_before_preprocess[:, 0]),
+                                     max(gt_before_preprocess[:, 1]) - min(gt_before_preprocess[:, 1]))
+                    bbx_factor = 2.2
+                    bbx = bbx_factor * max_gt_bbx
+                    x_offset = (max(gt_before_preprocess[:, 0]) + min(gt_before_preprocess[:, 0])) / 2 - bbx / 2
+                    y_offset = (max(gt_before_preprocess[:, 1]) + min(gt_before_preprocess[:, 1])) / 2 - bbx / 2
+                    ltrb = (x_offset, y_offset, x_offset + bbx, y_offset + bbx)
+                    img = cpu_image.crop(ltrb)
+
+                    # import matplotlib.pyplot as plt
+                    # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+                    # ax[0].imshow(np.asarray(cpu_image))
+                    # ax[1].imshow(np.asarray(img))
+                    # plt.show()
+
+                    # rescale image
+                    order = 1  # order of resize interpolation; 1 means linear interpolation
+                    w, h = img.size
+                    # keep aspect ratio the same
+                    reference_edge = 224
+                    target_max_edge = reference_edge
+                    max_edge = max(h, w)
+                    ratio_factor = target_max_edge / max_edge
+                    target_h = int(ratio_factor * h)
+                    target_w = int(ratio_factor * w)
+                    im_np = np.asarray(img)
+                    im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                    img = PIL.Image.fromarray(im_np)
+                    LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
+                    assert img.size[0] == target_w
+                    assert img.size[1] == target_h
+
+                    # pad frames
+                    img = np.asarray(img)
+                    pad_up = (reference_edge - img.shape[0]) // 2
+                    pad_down = (reference_edge - img.shape[0]) // 2
+                    pad_left = (reference_edge - img.shape[1]) // 2
+                    pad_right = (reference_edge - img.shape[1]) // 2
+                    img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+                    cpu_image = Image.fromarray(img.astype('uint8'), 'RGB')
+
+
+
+
+            visualizer.BaseVisualizer.image(cpu_image)
+            if preprocess is not None:
+                pred = preprocess.annotations_inverse(pred, meta)
+
+            # uncomment to save prediction vs gt
+            # import matplotlib.pyplot as plt
+            # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+            # ax.imshow(np.asarray(cpu_image))
+            # bool_annotated_joints_1 = gt[0]['keypoints'][:, 2] == 2
+            # ax.plot(gt[0]['keypoints'][bool_annotated_joints_1, 0], gt[0]['keypoints'][bool_annotated_joints_1, 1],
+            #            'go', label='ground truth')
+            # bool_annotated_joints_1 = pred[0].data[:, 2] > 0.1
+            # ax.plot(pred[0].data[bool_annotated_joints_1, 0], pred[0].data[bool_annotated_joints_1, 1],
+            #            'ro', label='prediction')
+            # ax.legend()
+            # plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/panoptic/shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch187/prediction_{}.png'.format(meta['file_name'][-12:-4]))
+            # plt.show()
+
+
+            # error = pred[0].data - gt[0]['keypoints']
+            try:
+                if pred[0].data.shape==(21,3) and gt[0]['keypoints'].shape==(21,3):
+                    pred_array.append(pred[0].data)
+                    gt_array.append(gt[0]['keypoints'])
+            except:
+                pass
+
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name), pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset, checkpoint_name), gt_array)
+
+
 
 def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
     args = cli()
@@ -926,32 +1044,32 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
-    index_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
-                                                                                                           checkpoint_name))
+    # index_array = np.load(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
+    #                                                                                                        checkpoint_name))
     assert pred_array.shape[0] == gt_array.shape[0]
-    assert index_array.shape[0] == gt_array.shape[0]
+    # assert index_array.shape[0] == gt_array.shape[0]
 
-    # TODO are these hflip correction necessary?
-    pred_array_correct = np.copy(pred_array)
-    pred_array_correct[:, 4, :] = pred_array[:, 20, :]
-    pred_array_correct[:, 3, :] = pred_array[:, 19, :]
-    pred_array_correct[:, 2, :] = pred_array[:, 18, :]
-    pred_array_correct[:, 1, :] = pred_array[:, 17, :]
-    pred_array_correct[:, 5, :] = pred_array[:, 13, :]
-    pred_array_correct[:, 6, :] = pred_array[:, 14, :]
-    pred_array_correct[:, 7, :] = pred_array[:, 15, :]
-    pred_array_correct[:, 8, :] = pred_array[:, 16, :]
-
-    pred_array_correct[:, 20, :] = pred_array[:, 4, :]
-    pred_array_correct[:, 19, :] = pred_array[:, 3, :]
-    pred_array_correct[:, 18, :] = pred_array[:, 2, :]
-    pred_array_correct[:, 17, :] = pred_array[:, 1, :]
-    pred_array_correct[:, 13, :] = pred_array[:, 5, :]
-    pred_array_correct[:, 14, :] = pred_array[:, 6, :]
-    pred_array_correct[:, 15, :] = pred_array[:, 7, :]
-    pred_array_correct[:, 16, :] = pred_array[:, 8, :]
-    pred_array = np.copy(pred_array_correct)
+    # # TODO are these hflip correction necessary?
+    # pred_array_correct = np.copy(pred_array)
+    # pred_array_correct[:, 4, :] = pred_array[:, 20, :]
+    # pred_array_correct[:, 3, :] = pred_array[:, 19, :]
+    # pred_array_correct[:, 2, :] = pred_array[:, 18, :]
+    # pred_array_correct[:, 1, :] = pred_array[:, 17, :]
+    # pred_array_correct[:, 5, :] = pred_array[:, 13, :]
+    # pred_array_correct[:, 6, :] = pred_array[:, 14, :]
+    # pred_array_correct[:, 7, :] = pred_array[:, 15, :]
+    # pred_array_correct[:, 8, :] = pred_array[:, 16, :]
+    #
+    # pred_array_correct[:, 20, :] = pred_array[:, 4, :]
+    # pred_array_correct[:, 19, :] = pred_array[:, 3, :]
+    # pred_array_correct[:, 18, :] = pred_array[:, 2, :]
+    # pred_array_correct[:, 17, :] = pred_array[:, 1, :]
+    # pred_array_correct[:, 13, :] = pred_array[:, 5, :]
+    # pred_array_correct[:, 14, :] = pred_array[:, 6, :]
+    # pred_array_correct[:, 15, :] = pred_array[:, 7, :]
+    # pred_array_correct[:, 16, :] = pred_array[:, 8, :]
+    # pred_array = np.copy(pred_array_correct)
 
 
     def PCK(PCK_thresh, pred_score_thresh=0.15, gt_conf_thresh=0):
@@ -1031,9 +1149,9 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
 
         return PCK_value, PCK_value_fingers
 
-    num_intervals = 60
-    max_error = 0.451
-    PCK_thresh = np.linspace(0.05, max_error, num_intervals)
+    num_intervals = 40
+    max_error = 0.20
+    PCK_thresh = np.linspace(0.01, max_error, num_intervals)
     # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
 
     y = []
@@ -1200,10 +1318,14 @@ if __name__ == '__main__':
     # eval_dataset = 'onehand10k'
     # freihand_multi_predict(checkpoint_name, eval_dataset)
 
-    checkpoint_name = 'shufflenetv2k16w-200803-140030-cif-caf-caf25-edge200-o10s.pkl.epoch277'
-    checkpoint_name = 'shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch050'
-    eval_dataset = 'pose_dataset'
-    posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
+    # checkpoint_name = 'shufflenetv2k16w-200803-140030-cif-caf-caf25-edge200-o10s.pkl.epoch277'
+    # checkpoint_name = 'shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch050'
+    checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch187'
+    eval_dataset = 'panoptic'
+    # panoptic_multi_predict(checkpoint_name, eval_dataset)
+
+
+    # posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
 
     # checkpoint_name = 'shufflenetv2k16w-200730-095321-cif-caf-caf25-edge200-o10s.pkl.epoch067'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch094'
@@ -1214,7 +1336,7 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
     # eval_dataset = 'posedataset'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
-    # PCK_normalized_plot(checkpoint_name, eval_dataset)
+    PCK_normalized_plot(checkpoint_name, eval_dataset)
     # PCK_plot(checkpoint_name, eval_dataset)
 
 
