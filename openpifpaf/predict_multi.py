@@ -241,7 +241,7 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
     b = 0
     hvr_pred_array = []
     hvr_name_array = []
-
+    error_counter = 0
     for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
 
@@ -249,9 +249,9 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
         for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
             b += 1
             try:
-                # print('b={}'.format(b))
-                percent_completed=b/data.__len__()*100
-                print('progress = {:.2f}'.format(percent_completed))
+                # # print('b={}'.format(b))
+                # percent_completed=b/data.__len__()*100
+                # print('progress = {:.2f}'.format(percent_completed))
                 # bar.next()
                 LOG.info('batch %d: %s', batch_i, meta['file_name'])
 
@@ -317,10 +317,13 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
                 #     modify for pad
                     # ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
                     # ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
-                pred_hvr[:, 0]=pred_hvr[:, 0]-pad_left
-                pred_hvr[:, 1]=pred_hvr[:, 1]-pad_up
-
+                # pred_hvr[:, 0]=pred_hvr[:, 0]-pad_left
+                # pred_hvr[:, 1]=pred_hvr[:, 1]-pad_up
+                #
                 # ax.plot(pred_hvr[:, 0], pred_hvr[:, 1], 'ro')
+                # ax.plot(pred_hvr[14, 0], pred_hvr[14, 1], 'bx')
+                # ax.plot(pred_hvr[13, 0], pred_hvr[13, 1], 'gx')
+                #
                 # plt.show()
 
                 # error = pred[0].data - gt[0]['keypoints']
@@ -328,9 +331,14 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
                 if pred_hvr.shape==(21,3):
                     hvr_pred_array.append(pred_hvr)
                     hvr_name_array.append(meta['file_name'])
+                else:
+                    error_counter += 1
+                    print('======================ERROR={} at meta["file_name"]={}, pred_hvr.shape==(21,3)={}'.format(error_counter, meta['file_name'], pred_hvr.shape==(21,3)))
 
             except:
-                pass
+                error_counter += 1
+                print('======================ERROR counter={} at meta["file_name"]={}'.format(error_counter, meta['file_name']))
+                continue
 
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/hvr_pred_array.npy'.format(eval_dataset, checkpoint_name), hvr_pred_array)
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/hvr_name_array.npy'.format(eval_dataset, checkpoint_name), hvr_name_array)
@@ -1193,6 +1201,7 @@ if __name__ == '__main__':
     # freihand_multi_predict(checkpoint_name, eval_dataset)
 
     checkpoint_name = 'shufflenetv2k16w-200803-140030-cif-caf-caf25-edge200-o10s.pkl.epoch277'
+    checkpoint_name = 'shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch050'
     eval_dataset = 'pose_dataset'
     posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
 

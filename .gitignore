@@ -62,3 +62,5 @@ openpifpaf/datasets/draft.py
 
 openpifpaf/pose_dataset
 pose_dataset
+Panoptic
+openpifpaf/Panoptic

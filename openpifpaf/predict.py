@@ -299,3 +299,14 @@ if __name__ == '__main__':
 # --debug-indices
 # cif:14
 # caf:14
+
+
+
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_7_D_1_Right_N_51
+# --image-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/pose_dataset/shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch100
+# --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch100
+# --json-output=/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/pose_dataset/shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch100
+# --debug
+# --loader-workers=0
+# --dpi-factor=5

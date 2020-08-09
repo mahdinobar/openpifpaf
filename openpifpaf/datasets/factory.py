@@ -8,6 +8,9 @@ from .. import transforms
 from .freihand import Freihand
 from .freihand_constants import FREIHAND_KEYPOINTS, FREIHAND_HFLIP
 
+from .panoptic import Panoptic
+from .panoptic_constants import PANOPTIC_KEYPOINTS, PANOPTIC_HFLIP
+
 from .posedataset import Posedataset
 from .posedataset_constants import POSEDATASET_KEYPOINTS, POSEDATASET_HFLIP
 
@@ -33,6 +36,8 @@ POSEDATASET_IMAGE_DIR_TRAIN = 'pose_dataset'
 RHD_IMAGE_DIR_TRAIN = 'RHD_published_v2/'
 ONEHAND10K_IMAGE_DIR_TRAIN = 'OneHand10K'
 NYU_IMAGE_DIR_TRAIN = 'nyu/'
+PANOPTIC_IMAGE_DIR_TRAIN = '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Panoptic/hand143_panopticdb/'
+
 
 
 
@@ -67,6 +72,8 @@ def train_cli(parser):
                            help='do not apply data augmentation')
 
     group.add_argument('--freihand-train-image-dir', default=FREIHAND_IMAGE_DIR_TRAIN)
+    group.add_argument('--panoptic-train-image-dir', default=PANOPTIC_IMAGE_DIR_TRAIN)
+
     group.add_argument('--posedataset-train-image-dir', default=POSEDATASET_IMAGE_DIR_TRAIN)
     group.add_argument('--rhd-train-image-dir', default=RHD_IMAGE_DIR_TRAIN)
     group.add_argument('--onehand10k-train-image-dir', default=ONEHAND10K_IMAGE_DIR_TRAIN)
@@ -153,6 +160,46 @@ def train_freihand_preprocess_factory(
         transforms.NormalizeAnnotations(),
         transforms.AnnotationJitter(),
         transforms.RandomApply(transforms.HFlip(FREIHAND_KEYPOINTS, FREIHAND_HFLIP), 0.5),
+        rescale_t,
+        transforms.Crop(square_edge, use_area_of_interest=True),
+        transforms.CenterPad(square_edge),
+        orientation_t,
+        transforms.TRAIN_TRANSFORM,
+    ])
+
+def train_panoptic_preprocess_factory(
+        *,
+        square_edge,
+        augmentation=True,
+        extended_scale=False,
+        orientation_invariant=0.0,
+        rescale_images=1.0,
+):
+    if not augmentation:
+        return transforms.Compose([
+            transforms.NormalizeAnnotations(),
+            transforms.RescaleAbsolute(square_edge),
+            transforms.CenterPad(square_edge),
+            transforms.EVAL_TRANSFORM,
+        ])
+
+    if extended_scale:
+        rescale_t = transforms.RescaleRelative(
+            scale_range=(0.25 * rescale_images, 2.0 * rescale_images),
+            power_law=True)
+    else:
+        rescale_t = transforms.RescaleRelative(
+            scale_range=(0.4 * rescale_images, 2.0 * rescale_images),
+            power_law=True)
+
+    orientation_t = None
+    if orientation_invariant:
+        orientation_t = transforms.RandomApply(transforms.RotateBy90(), orientation_invariant)
+
+    return transforms.Compose([
+        transforms.NormalizeAnnotations(),
+        transforms.AnnotationJitter(),
+        transforms.RandomApply(transforms.HFlip(PANOPTIC_KEYPOINTS, PANOPTIC_HFLIP), 0.5),
         rescale_t,
         transforms.Crop(square_edge, use_area_of_interest=True),
         transforms.CenterPad(square_edge),
@@ -452,6 +499,42 @@ def train_freihand_factory(args, target_transforms):
     return train_loader, val_loader
 
 
+def train_panoptic_factory(args, target_transforms):
+    preprocess = train_panoptic_preprocess_factory(
+        square_edge=args.square_edge,
+        augmentation=args.augmentation,
+        extended_scale=args.extended_scale,
+        orientation_invariant=args.orientation_invariant,
+        rescale_images=args.rescale_images)
+
+    if args.loader_workers is None:
+        args.loader_workers = args.batch_size
+
+    train_data = Panoptic(image_dir=args.panoptic_train_image_dir, mode='training', preprocess=preprocess,
+        target_transforms=target_transforms)
+
+    if args.duplicate_data:
+        train_data = torch.utils.data.ConcatDataset(
+            [train_data for _ in range(args.duplicate_data)])
+    train_loader = torch.utils.data.DataLoader(
+        train_data, batch_size=args.batch_size, shuffle=not args.debug,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,
+        collate_fn=collate_images_targets_meta)
+
+    val_data = Panoptic(image_dir=args.panoptic_train_image_dir, mode='evaluation', preprocess=preprocess,
+        target_transforms=target_transforms)
+
+    if args.duplicate_data:
+        val_data = torch.utils.data.ConcatDataset(
+            [val_data for _ in range(args.duplicate_data)])
+    val_loader = torch.utils.data.DataLoader(
+        val_data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,
+        collate_fn=collate_images_targets_meta)
+
+    return train_loader, val_loader
+
+
 def train_posedataset_factory(args, target_transforms):
     preprocess = train_posedataset_preprocess_factory(
         square_edge=args.square_edge,
@@ -657,6 +740,8 @@ def train_factory(args, target_transforms):
         return train_cocodet_factory(args, target_transforms)
     elif args.dataset in ('freihand',):
         return train_freihand_factory(args, target_transforms)
+    elif args.dataset in ('panoptic',):
+        return train_panoptic_factory(args, target_transforms)
     elif args.dataset in ('rhd',):
         return train_rhd_factory(args, target_transforms)
     elif args.dataset in ('onehand10k',):

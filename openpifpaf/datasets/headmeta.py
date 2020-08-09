@@ -19,6 +19,16 @@ from .freihand_constants import (
     FREIHAND_KINEMATIC_TREE_SKELETON,
 )
 
+from .panoptic_constants import (
+    PANOPTIC_CATEGORIES,
+    PANOPTIC_KEYPOINTS,
+    PANOPTIC_HAND_SKELETON,
+    PANOPTIC_HAND_SIGMAS,
+    PANOPTIC_UPRIGHT_POSE,
+    DENSER_PANOPTIC_HAND_CONNECTIONS,
+    PANOPTIC_KINEMATIC_TREE_SKELETON,
+)
+
 from .nyu_constants import (
     NYU_CATEGORIES,
     NYU_KEYPOINTS,
@@ -73,8 +83,10 @@ def factory(head_names):
     # return [factory_single_onehand10k(hn) for hn in head_names]
     # # uncomment for nyu dataset
     # return [factory_single_nyu(hn) for hn in head_names]
-    # uncomment for posedataset dataset
-    return [factory_single_posedataset(hn) for hn in head_names]
+    # # uncomment for posedataset dataset
+    # return [factory_single_posedataset(hn) for hn in head_names]
+    # uncomment for panoptic dataset
+    return [factory_single_panoptic(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:
@@ -107,6 +119,37 @@ def factory_single(head_name):
                                COCO_PERSON_SKELETON)
     raise NotImplementedError
 
+
+def factory_single_panoptic(head_name):
+    if 'cifdet' in head_name:
+        return DetectionMeta(head_name, PANOPTIC_CATEGORIES)
+    if 'pif' in head_name or 'cif' in head_name:
+        return IntensityMeta(head_name,
+                             PANOPTIC_KEYPOINTS,
+                             PANOPTIC_HAND_SIGMAS,
+                             PANOPTIC_UPRIGHT_POSE,
+                             PANOPTIC_HAND_SKELETON)
+    if 'caf25' in head_name:
+        return AssociationMeta(head_name,
+                               PANOPTIC_KEYPOINTS,
+                               PANOPTIC_HAND_SIGMAS,
+                               PANOPTIC_UPRIGHT_POSE,
+                               DENSER_PANOPTIC_HAND_CONNECTIONS,
+                               sparse_skeleton=PANOPTIC_HAND_SKELETON,
+                               only_in_field_of_view=True)
+    if 'caf16' in head_name:
+        return AssociationMeta(head_name,
+                               PANOPTIC_KEYPOINTS,
+                               PANOPTIC_HAND_SIGMAS,
+                               PANOPTIC_UPRIGHT_POSE,
+                               PANOPTIC_KINEMATIC_TREE_SKELETON)
+    if head_name == 'caf':
+        return AssociationMeta(head_name,
+                               PANOPTIC_KEYPOINTS,
+                               PANOPTIC_HAND_SIGMAS,
+                               PANOPTIC_UPRIGHT_POSE,
+                               PANOPTIC_HAND_SKELETON)
+    raise NotImplementedError
 
 def factory_single_freihand(head_name):
     if 'cifdet' in head_name:
