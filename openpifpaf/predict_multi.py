@@ -1077,9 +1077,9 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
         total_correct_data = 0
         total_counted_data_fingers = np.zeros(21)
         total_correct_data_fingers = np.zeros(21)
-
+        bbx_factor=1
         for data_id in range(0, pred_array.shape[0]):
-            tightest_edge_bbox = max(abs(max(gt_array[data_id, :, 0])-min(gt_array[data_id, :, 0])), abs(max(gt_array[data_id, :, 1])-min(gt_array[data_id, :, 1])))
+            tightest_edge_bbox = bbx_factor*max(abs(max(gt_array[data_id, :, 0])-min(gt_array[data_id, :, 0])), abs(max(gt_array[data_id, :, 1])-min(gt_array[data_id, :, 1])))
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
             bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (
@@ -1156,33 +1156,53 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
 
     y = []
     y_joints = np.zeros((21, num_intervals))
-    for iter in range(0, num_intervals):
+    for iter in range(40, num_intervals):
         PCK_value, PCK_value_fingers = PCK(PCK_thresh[iter])
         y_joints[:, iter] = PCK_value_fingers
         y.append(PCK_value)
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCKvsPXLs.npy'.format(
-        eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_fingers.npy'.format(
-        eval_dataset, checkpoint_name), y_joints)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_PCK_thresh.npy'.format(
-        eval_dataset, checkpoint_name), PCK_thresh)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_y.npy'.format(eval_dataset,
-                                                                                                        checkpoint_name),
-            y)
+    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCKvsPXLs.npy'.format(
+    #     eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
+    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_fingers.npy'.format(
+    #     eval_dataset, checkpoint_name), y_joints)
+    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_PCK_thresh.npy'.format(
+    #     eval_dataset, checkpoint_name), PCK_thresh)
+    # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_y.npy'.format(eval_dataset,
+    #                                                                                                     checkpoint_name),
+    #         y)
 
-    # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_2DPCK_fingers.npy'.format(
-    #     eval_dataset, checkpoint_name))
-    # PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_PCK_thresh.npy'.format(
-    #     eval_dataset, checkpoint_name))
-    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/google_y.npy'.format(eval_dataset,
-    #                                                                                                     checkpoint_name))
+    y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_fingers.npy'.format(
+        eval_dataset, checkpoint_name))
+    PCK_thresh = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_PCK_thresh.npy'.format(
+        eval_dataset, checkpoint_name))
+    y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_y.npy'.format(eval_dataset,
+                                                                                                        checkpoint_name))
+
+    # y_joints = np.load(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_fingers_with_bbx_factor.npy'.format(
+    #         eval_dataset, checkpoint_name))
+    # PCK_thresh = np.load(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_PCK_thresh_with_bbx_factor.npy'.format(
+    #         eval_dataset, checkpoint_name))
+    # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_y_with_bbx_factor.npy'.format(
+    #     eval_dataset,
+    #     checkpoint_name))
 
     # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+
+    # AGMN_jointly_fine_tuned = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_jointly_fine_tuned.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_separately_trained = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_separately_trained.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_with_gt_relative_positions = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_with_gt_relative_positions.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_CPM = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_CPM.csv'.format(eval_dataset), delimiter=',')
+    # NSRM_CPM = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_CPM.csv'.format(eval_dataset), delimiter=',')
+    NSRM_LDM_G1 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LDM_G1.csv'.format(eval_dataset), delimiter=',')
+    NSRM_LDM_G1and6 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LDM_G1and6.csv'.format(eval_dataset), delimiter=',')
+    NSRM_LPM_G1 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LPM_G1.csv'.format(eval_dataset), delimiter=',')
+    NSRM_LPM_G1and6 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LPM_G1and6.csv'.format(eval_dataset), delimiter=',')
 
     # handPifPaf_paper_2DPCK_PXLs_freihand = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}_2DPCKvsPXLs.npy'.format(eval_dataset, checkpoint_name))
     # PCK_thresh = handPifPaf_paper_2DPCK_PXLs_freihand[0, :]
@@ -1195,19 +1215,32 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
     # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
     # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
+
+    # panoptic SOA
+    # axes.plot(AGMN_jointly_fine_tuned[:, 0], AGMN_jointly_fine_tuned[:, 1], label='jointly_fine_tuned', c='tab:orange')
+    # axes.plot(AGMN_separately_trained[:, 0], AGMN_separately_trained[:, 1], label='separately_trained', c='tab:green')
+    # axes.plot(AGMN_with_gt_relative_positions[:, 0], AGMN_with_gt_relative_positions[:, 1], label='with_gt_relative_positions', c='tab:red')
+    # axes.plot(AGMN_CPM[:, 0], AGMN_CPM[:, 1], label='CPM', c='tab:purple')
+    # axes.plot(NSRM_CPM[:, 0], NSRM_CPM[:, 1], label='CPM', c='tab:brown')
+    axes.plot(NSRM_LDM_G1[:, 0], NSRM_LDM_G1[:, 1], label='LDM_G1', c='tab:green')
+    axes.plot(NSRM_LDM_G1and6[:, 0], NSRM_LDM_G1and6[:, 1], label='LDM_G1and6', c='black')
+    axes.plot(NSRM_LPM_G1[:, 0], NSRM_LPM_G1[:, 1], label='LPM_G1', c='tab:orange')
+    axes.plot(NSRM_LPM_G1and6[:, 0], NSRM_LPM_G1and6[:, 1], label='LPM_G1and6', c='tab:red')
+
+
     axes.set_xlabel('Normalized Threshold')
     axes.set_ylabel('2D PCK')
     axes.set_title('Percentage of Correct Key-points vs Normalized Threshold')
     axes.grid(True)
     axes.legend()
-    axes.yaxis.set_ticks(np.arange(0.05, 1, 0.05))
-    axes.set_ylim([0.05, 1])
+    axes.yaxis.set_ticks(np.arange(0.5, 1, 0.05))
+    axes.set_ylim([0.5, 1])
 
-    axes.xaxis.set_ticks(np.arange(0, max_error, 0.05))
-    axes.set_xlim([0, max_error])
+    axes.xaxis.set_ticks(np.arange(0.04, 0.2, 0.05))
+    axes.set_xlim([0.04, 0.2])
 
     plt.savefig(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK.png'.format(eval_dataset,
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_vs_AGMN.png'.format(eval_dataset,
                                                                                                         checkpoint_name),
         format='png')
     plt.show()
@@ -1226,7 +1259,7 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     axes2.legend()
     axes2.set_ylim([0, 1])
     axes2.set_xlim([0, max_error])
-    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_joints.png'.format(
+    plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/normalized_2DPCK_joints_vs_AGMN.png'.format(
         eval_dataset, checkpoint_name), format='png')
     plt.show()
     print('PCK_plot Successfully Ended!')
