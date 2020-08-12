@@ -658,6 +658,102 @@ def rhd_multi_predict(checkpoint_name, eval_dataset):
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/gt_array.npy'.format(checkpoint_name), gt_array)
 
 
+
+def posedataset_multi_predict(checkpoint_name, eval_dataset):
+    args = cli()
+
+    processor, model = processor_factory(args)
+    preprocess = preprocess_factory(args)
+
+    # data
+    data = datasets.ImageList_PoseDataset_multi(image_dir=args.images[0], mode='evaluation', preprocess=preprocess)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=args.batch_size, shuffle=False,
+        pin_memory=args.pin_memory, num_workers=args.loader_workers,
+        collate_fn=datasets.collate_images_anns_meta)
+
+    # # visualizers
+    # keypoint_painter = show.KeypointPainter(
+    #     color_connections=not args.monocolor_connections,
+    #     linewidth=args.line_width,
+    # )
+    # annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
+    b = 0
+    pred_array = []
+    gt_array = []
+    pred_names= []
+    for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
+        pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
+
+        # import pdb; pdb.set_trace()
+        # unbatch
+        for pred, gt, meta in zip(pred_batch, gt_batch, meta_batch):
+            failure_counter = 0
+            try:
+                if preprocess is not None:
+                    pred = preprocess.annotations_inverse(pred, meta)
+                if b>185:
+                    if pred[0].data.shape == (21, 3) and gt[0]['keypoints'].shape == (21, 3):
+                        # with open(meta['file_name'], 'rb') as f:
+                        #     cpu_image = PIL.Image.open(f).convert('RGB')
+                        #
+                        #     # uncomment for PoseDataset
+                        #     img = cpu_image
+                        #     order = 1  # order of resize interpolation; 1 means linear interpolation
+                        #     w, h = img.size
+                        #     # keep aspect ratio the same
+                        #     reference_edge = 224
+                        #     target_max_edge = reference_edge
+                        #     max_edge = max(h, w)
+                        #     ratio_factor = target_max_edge / max_edge
+                        #     target_h = int(ratio_factor * h)
+                        #     target_w = int(ratio_factor * w)
+                        #     im_np = np.asarray(img)
+                        #     im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+                        #     img = PIL.Image.fromarray(im_np)
+                        #     assert img.size[0] == target_w
+                        #     assert img.size[1] == target_h
+                        #     # pad frames
+                        #     img = np.asarray(img)
+                        #     pad_up = (reference_edge - img.shape[0]) // 2
+                        #     pad_down = (reference_edge - img.shape[0]) // 2
+                        #     pad_left = (reference_edge - img.shape[1]) // 2
+                        #     pad_right = (reference_edge - img.shape[1]) // 2
+                        #     img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)),
+                        #                  mode='symmetric')
+                        #     cpu_image = Image.fromarray(img.astype('uint8'), 'RGB')
+                            # import matplotlib.pyplot as plt
+                            # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+                            # ax.imshow(np.asarray(img))
+                            # # bool_annotated_joints_1 = _anns[0][0]['keypoints'][:, 2] == 2
+                            # ax.plot(gt[0]['keypoints'][:, 0],
+                            #            gt[0]['keypoints'][:, 1], 'ro')
+                            # ax.plot(pred[0].data[:, 0],
+                            #            pred[0].data[:, 1], 'bx')
+                            # for txt in range(0, 21):
+                            #     ax.annotate(txt, (gt[0]['keypoints'][txt, 0]-3, gt[0]['keypoints'][txt, 1]-3), c='r')
+                            #     ax.annotate(txt, (pred[0].data[txt, 0]+3, pred[0].data[txt, 1]+3), c='b')
+                            # plt.title('b={}'.format(b))
+                            # plt.show(block=True)
+
+                        pred_names.append(meta['file_name'])
+                        pred_array.append(pred[0].data)
+                        gt_array.append(gt[0]['keypoints'])
+            except:
+                failure_counter += 1
+                pass
+
+            b += 1
+            # print('b={}'.format(b))
+            percent_completed=b/data.__len__()*100
+            print('progress = {:.2f}; failure_counter = {}'.format(percent_completed,failure_counter))
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name),pred_array)
+    np.save(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset, checkpoint_name), gt_array)
+
+
+
+
 def onehand10k_multi_predict(checkpoint_name, eval_dataset):
     args = cli()
 
@@ -817,29 +913,30 @@ def PCK_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
-    index_array = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
-                                                                                                           checkpoint_name))
+    # index_array = np.load(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
+    #                                                                                                        checkpoint_name))
 
-    pred_array_correct = np.copy(pred_array)
-    pred_array_correct[:, 4, :] = pred_array[:, 20, :]
-    pred_array_correct[:, 3, :] = pred_array[:, 19, :]
-    pred_array_correct[:, 2, :] = pred_array[:, 18, :]
-    pred_array_correct[:, 1, :] = pred_array[:, 17, :]
-    pred_array_correct[:, 5, :] = pred_array[:, 13, :]
-    pred_array_correct[:, 6, :] = pred_array[:, 14, :]
-    pred_array_correct[:, 7, :] = pred_array[:, 15, :]
-    pred_array_correct[:, 8, :] = pred_array[:, 16, :]
-
-    pred_array_correct[:, 20, :] = pred_array[:, 4, :]
-    pred_array_correct[:, 19, :] = pred_array[:, 3, :]
-    pred_array_correct[:, 18, :] = pred_array[:, 2, :]
-    pred_array_correct[:, 17, :] = pred_array[:, 1, :]
-    pred_array_correct[:, 13, :] = pred_array[:, 5, :]
-    pred_array_correct[:, 14, :] = pred_array[:, 6, :]
-    pred_array_correct[:, 15, :] = pred_array[:, 7, :]
-    pred_array_correct[:, 16, :] = pred_array[:, 8, :]
-    pred_array = np.copy(pred_array_correct)
+    # # TODO uncomment for rhd? and?
+    # pred_array_correct = np.copy(pred_array)
+    # pred_array_correct[:, 4, :] = pred_array[:, 20, :]
+    # pred_array_correct[:, 3, :] = pred_array[:, 19, :]
+    # pred_array_correct[:, 2, :] = pred_array[:, 18, :]
+    # pred_array_correct[:, 1, :] = pred_array[:, 17, :]
+    # pred_array_correct[:, 5, :] = pred_array[:, 13, :]
+    # pred_array_correct[:, 6, :] = pred_array[:, 14, :]
+    # pred_array_correct[:, 7, :] = pred_array[:, 15, :]
+    # pred_array_correct[:, 8, :] = pred_array[:, 16, :]
+    #
+    # pred_array_correct[:, 20, :] = pred_array[:, 4, :]
+    # pred_array_correct[:, 19, :] = pred_array[:, 3, :]
+    # pred_array_correct[:, 18, :] = pred_array[:, 2, :]
+    # pred_array_correct[:, 17, :] = pred_array[:, 1, :]
+    # pred_array_correct[:, 13, :] = pred_array[:, 5, :]
+    # pred_array_correct[:, 14, :] = pred_array[:, 6, :]
+    # pred_array_correct[:, 15, :] = pred_array[:, 7, :]
+    # pred_array_correct[:, 16, :] = pred_array[:, 8, :]
+    # pred_array = np.copy(pred_array_correct)
 
 
     def PCK(PCK_thresh, pred_score_thresh=0.15, gt_conf_thresh=0):
@@ -848,14 +945,14 @@ def PCK_plot(checkpoint_name, eval_dataset):
         total_counted_data_fingers = np.zeros(21)
         total_correct_data_fingers = np.zeros(21)
 
-        correction_factor_rhd_resize = (320 / 224)
+        correction_factor = 1 # (320 / 224) for rhd_resize
         for data_id in range(0, pred_array.shape[0]):
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
             bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (
                         gt_array[data_id, :, 2] > gt_conf_thresh)
             _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
-            _norms = np.linalg.norm(_errors, axis=1)*correction_factor_rhd_resize
+            _norms = np.linalg.norm(_errors, axis=1)*correction_factor
 
 # # ---------------------------------------------------------------------------
 #             with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/RHD_published_v2/evaluation/color/%.5d.png' %
@@ -903,11 +1000,12 @@ def PCK_plot(checkpoint_name, eval_dataset):
             for joint_id in range(0, 21):
                 if bool_acceptable_data[joint_id] == True:
                     _error = pred_array[data_id, joint_id, :2] - gt_array[data_id, joint_id, :2]
-                    _norm = np.linalg.norm(_error, axis=0)*correction_factor_rhd_resize
+                    _norm = np.linalg.norm(_error, axis=0)*correction_factor
                     total_correct_data_fingers[joint_id] = total_correct_data_fingers[joint_id] + sum(
                         [_norm] < PCK_thresh)
                     total_counted_data_fingers[joint_id] = total_counted_data_fingers[joint_id] + 1
-
+            # if sum(_norms < PCK_thresh)!=_norms.shape[0]:
+            #     print('index at pred_array={}, no. data out thresh={}'.format(data_id,_norms.shape[0]-sum(_norms < PCK_thresh)))
             total_correct_data += sum(_norms < PCK_thresh)
             total_counted_data += _norms.shape[0]
             # # modified definition: count failures
@@ -933,13 +1031,13 @@ def PCK_plot(checkpoint_name, eval_dataset):
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs_hflipped.npy'.format(
         eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers_hflipped.npy'.format(
         eval_dataset, checkpoint_name), y_joints)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh_hflipped.npy'.format(
         eval_dataset, checkpoint_name), PCK_thresh)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y_hflipped.npy'.format(eval_dataset,
                                                                                                         checkpoint_name),
             y)
 
@@ -954,26 +1052,26 @@ def PCK_plot(checkpoint_name, eval_dataset):
     # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
 
-    CPM_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    CPM_2DPCKvsPXLs = np.vstack((np.sort(CPM_2DPCKvsPXLs[:, 0]), np.sort(CPM_2DPCKvsPXLs[:, 1]))).T
-    CPM_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    CPM_gt_2DPCKvsPXLs = np.vstack((np.sort(CPM_gt_2DPCKvsPXLs[:, 0]), np.sort(CPM_gt_2DPCKvsPXLs[:, 1]))).T
-    CPMAtt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    CPMAtt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_2DPCKvsPXLs[:, 1]))).T
-    CPMAtt_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
-    CPMAtt_gt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 1]))).T
-    RGBPI_2DPCKvsPXLs = np.genfromtxt(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/RGBPI_2DPCKvsPXLs.csv'.format(
-            eval_dataset), delimiter=',')
-    RGBPI_2DPCKvsPXLs = np.vstack((np.sort(RGBPI_2DPCKvsPXLs[:, 0]), np.sort(RGBPI_2DPCKvsPXLs[:, 1]))).T
-    Wang1_2DPCKvsPXLs = np.genfromtxt(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang1_2DPCKvsPXLs.csv'.format(
-            eval_dataset), delimiter=',')
-    Wang1_2DPCKvsPXLs = np.vstack((np.sort(Wang1_2DPCKvsPXLs[:, 0]), np.sort(Wang1_2DPCKvsPXLs[:, 1]))).T
-    Wang2_2DPCKvsPXLs = np.genfromtxt(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang2_2DPCKvsPXLs.csv'.format(
-            eval_dataset), delimiter=',')
-    Wang2_2DPCKvsPXLs = np.vstack((np.sort(Wang2_2DPCKvsPXLs[:, 0]), np.sort(Wang2_2DPCKvsPXLs[:, 1]))).T
+    # CPM_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # CPM_2DPCKvsPXLs = np.vstack((np.sort(CPM_2DPCKvsPXLs[:, 0]), np.sort(CPM_2DPCKvsPXLs[:, 1]))).T
+    # CPM_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPM_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # CPM_gt_2DPCKvsPXLs = np.vstack((np.sort(CPM_gt_2DPCKvsPXLs[:, 0]), np.sort(CPM_gt_2DPCKvsPXLs[:, 1]))).T
+    # CPMAtt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # CPMAtt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_2DPCKvsPXLs[:, 1]))).T
+    # CPMAtt_gt_2DPCKvsPXLs = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/CPMAtt_gt_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
+    # CPMAtt_gt_2DPCKvsPXLs = np.vstack((np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 0]), np.sort(CPMAtt_gt_2DPCKvsPXLs[:, 1]))).T
+    # RGBPI_2DPCKvsPXLs = np.genfromtxt(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/RGBPI_2DPCKvsPXLs.csv'.format(
+    #         eval_dataset), delimiter=',')
+    # RGBPI_2DPCKvsPXLs = np.vstack((np.sort(RGBPI_2DPCKvsPXLs[:, 0]), np.sort(RGBPI_2DPCKvsPXLs[:, 1]))).T
+    # Wang1_2DPCKvsPXLs = np.genfromtxt(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang1_2DPCKvsPXLs.csv'.format(
+    #         eval_dataset), delimiter=',')
+    # Wang1_2DPCKvsPXLs = np.vstack((np.sort(Wang1_2DPCKvsPXLs[:, 0]), np.sort(Wang1_2DPCKvsPXLs[:, 1]))).T
+    # Wang2_2DPCKvsPXLs = np.genfromtxt(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/Wang2_2DPCKvsPXLs.csv'.format(
+    #         eval_dataset), delimiter=',')
+    # Wang2_2DPCKvsPXLs = np.vstack((np.sort(Wang2_2DPCKvsPXLs[:, 0]), np.sort(Wang2_2DPCKvsPXLs[:, 1]))).T
 
 
 
@@ -985,7 +1083,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
     from sklearn.metrics import auc
     AUC = auc(PCK_thresh, np.asarray(y))/max_error
-    AUC2 = auc(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1])/(max(RGBPI_2DPCKvsPXLs[:, 0])-min(RGBPI_2DPCKvsPXLs[:,0]))
+    # AUC2 = auc(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1])/(max(RGBPI_2DPCKvsPXLs[:, 0])-min(RGBPI_2DPCKvsPXLs[:,0]))
 
     print('AUC of 2PCKvsPX is =',AUC)
 
@@ -994,13 +1092,13 @@ def PCK_plot(checkpoint_name, eval_dataset):
     # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
     # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
     # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
-    axes.plot(CPM_2DPCKvsPXLs[:, 0], CPM_2DPCKvsPXLs[:, 1], label='CPM', c='green')
-    axes.plot(CPM_gt_2DPCKvsPXLs[:, 0], CPM_gt_2DPCKvsPXLs[:, 1], label='CPM_gt', c='orange')
-    axes.plot(CPMAtt_2DPCKvsPXLs[:, 0], CPMAtt_2DPCKvsPXLs[:, 1], label='CPMAtt', c='olive')
-    axes.plot(CPMAtt_gt_2DPCKvsPXLs[:, 0], CPMAtt_gt_2DPCKvsPXLs[:, 1], label='CPMAtt_gt', c='m')
-    axes.plot(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1], label='RGB+PI', c='brown')
-    axes.plot(Wang1_2DPCKvsPXLs[:, 0], Wang1_2DPCKvsPXLs[:, 1], label='Wang1', c='red')
-    axes.plot(Wang2_2DPCKvsPXLs[:, 0], Wang2_2DPCKvsPXLs[:, 1], label='Wang2', c='black')
+    # axes.plot(CPM_2DPCKvsPXLs[:, 0], CPM_2DPCKvsPXLs[:, 1], label='CPM', c='green')
+    # axes.plot(CPM_gt_2DPCKvsPXLs[:, 0], CPM_gt_2DPCKvsPXLs[:, 1], label='CPM_gt', c='orange')
+    # axes.plot(CPMAtt_2DPCKvsPXLs[:, 0], CPMAtt_2DPCKvsPXLs[:, 1], label='CPMAtt', c='olive')
+    # axes.plot(CPMAtt_gt_2DPCKvsPXLs[:, 0], CPMAtt_gt_2DPCKvsPXLs[:, 1], label='CPMAtt_gt', c='m')
+    # axes.plot(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1], label='RGB+PI', c='brown')
+    # axes.plot(Wang1_2DPCKvsPXLs[:, 0], Wang1_2DPCKvsPXLs[:, 1], label='Wang1', c='red')
+    # axes.plot(Wang2_2DPCKvsPXLs[:, 0], Wang2_2DPCKvsPXLs[:, 1], label='Wang2', c='black')
 
 
 
@@ -1353,8 +1451,16 @@ if __name__ == '__main__':
 
     # checkpoint_name = 'shufflenetv2k16w-200803-140030-cif-caf-caf25-edge200-o10s.pkl.epoch277'
     # checkpoint_name = 'shufflenetv2k16w-200804-203646-cif-caf-caf25-edge200-o10s.pkl.epoch050'
-    checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch187'
-    eval_dataset = 'panoptic'
+    # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch187'
+    # checkpoint_name = 'shufflenetv2k16w-200810-234209-cif-caf-caf25-edge200-o10s.pkl.epoch320'
+    # checkpoint_name = 'shufflenetv2k16w-200812-092552-cif-caf-edge200-o10s.pkl.epoch023'
+    checkpoint_name = 'shufflenetv2k16w-200811-215425-cif-caf-edge200-o10s.pkl.epoch006'
+    eval_dataset = 'pose_dataset'
+    posedataset_multi_predict(checkpoint_name, eval_dataset)
+    # PCK_plot(checkpoint_name, eval_dataset)
+
+
+
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
 
 
@@ -1369,8 +1475,9 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
     # eval_dataset = 'posedataset'
     # rhd_multi_predict(checkpoint_name, eval_dataset)
-    PCK_normalized_plot(checkpoint_name, eval_dataset)
-    # PCK_plot(checkpoint_name, eval_dataset)
+
+
+    # PCK_normalized_plot(checkpoint_name, eval_dataset)
 
 
     # onehand10k_multi_predict(checkpoint_name, eval_dataset)

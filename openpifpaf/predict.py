@@ -158,7 +158,7 @@ def main():
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList_PoseDataset(args.images, preprocess=preprocess)
+    data = datasets.ImageList(args.images, preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -207,8 +207,8 @@ def main():
                     pad_left = (reference_edge - img.shape[1]) // 2
                     pad_right = (reference_edge - img.shape[1]) // 2
                     img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-
                     cpu_image = Image.fromarray(img.astype('uint8'), 'RGB')
+
 
                     # import matplotlib.pyplot as plt
                     # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
@@ -310,3 +310,35 @@ if __name__ == '__main__':
 # --debug
 # --loader-workers=0
 # --dpi-factor=5
+
+
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_1_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_2_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_3_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_4_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_5_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_6_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_7_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_8_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_9_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_10_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_11_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_12_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_13_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_14_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_15_D_1_Left_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_1_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_2_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_3_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_4_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_5_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_6_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_7_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_8_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_9_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_10_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_11_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_12_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_13_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_14_D_1_Right_N_85
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_15_D_1_Right_N_85

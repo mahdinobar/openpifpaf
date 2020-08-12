@@ -4,4 +4,4 @@ from .coco import Coco
 from .collate import collate_images_anns_meta, collate_images_targets_meta
 from .factory import train_cli, train_configure, train_factory
 from . import headmeta
-from .image_list import ImageList, PilImageList, ImageList_Freihand, ImageList_RHD, ImageList_OneHand10K, ImageList_Nyu, ImageList_PoseDataset, ImageList_PoseDataset_hvr, ImageList_Panoptic
+from .image_list import ImageList, PilImageList, ImageList_Freihand, ImageList_RHD, ImageList_OneHand10K, ImageList_Nyu, ImageList_PoseDataset_multi, ImageList_PoseDataset_hvr, ImageList_Panoptic

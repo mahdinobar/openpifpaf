@@ -80,6 +80,13 @@ def train_cli(parser):
     group.add_argument('--nyu-train-image-dir', default=NYU_IMAGE_DIR_TRAIN)
 
 
+    group.add_argument('--concatenate-with-dataset', default=None, nargs='+',
+                       help='name of dataset to concatenate for training; None means no other dataset; [rhd, freihand, panoptic]')
+    group.add_argument('--concatenate-with-dataset-image-dir', default=None , nargs='+',
+                       help='directory of name of dataset to concatenate for training; None means no other dataset; [rhd_dir, freihand_dir, panoptic_dir]')
+
+
+
 
 
 
@@ -546,12 +553,39 @@ def train_posedataset_factory(args, target_transforms):
     if args.loader_workers is None:
         args.loader_workers = args.batch_size
 
-    train_data = Posedataset(image_dir=args.posedataset_train_image_dir, mode='training', preprocess=preprocess,
-        target_transforms=target_transforms)
+
+    if args.concatenate_with_dataset is not None:
+        train_data_posedataset = Posedataset(image_dir=args.posedataset_train_image_dir, mode='training', preprocess=preprocess,
+                                 target_transforms=target_transforms)
+        train_data=[]
+        train_data.append(train_data_posedataset)
+        if args.concatenate_with_dataset[0]=='rhd':
+            train_data_rhd = Rhd(image_dir=args.concatenate_with_dataset_image_dir[0], mode='training', preprocess=preprocess,
+                             target_transforms=target_transforms)
+            train_data.append(train_data_rhd)
+
+        if args.concatenate_with_dataset[1] == 'freihand':
+            train_data_freihand = Freihand(image_dir=args.concatenate_with_dataset_image_dir[1], mode='training', preprocess=preprocess,
+                                  target_transforms=target_transforms)
+            train_data.append(train_data_freihand)
+
+        if args.concatenate_with_dataset[2] == 'panoptic':
+            train_data_panoptic = Panoptic(image_dir=args.concatenate_with_dataset_image_dir[2], mode='training',
+                                 preprocess=preprocess,
+                                 target_transforms=target_transforms)
+            train_data.append(train_data_panoptic)
+        train_data = torch.utils.data.ConcatDataset(train_data)
+
+    else:
+        train_data = Posedataset(image_dir=args.posedataset_train_image_dir, mode='training', preprocess=preprocess,
+                                 target_transforms=target_transforms)
+
 
     if args.duplicate_data:
         train_data = torch.utils.data.ConcatDataset(
             [train_data for _ in range(args.duplicate_data)])
+
+
     train_loader = torch.utils.data.DataLoader(
         train_data, batch_size=args.batch_size, shuffle=not args.debug,
         pin_memory=args.pin_memory, num_workers=args.loader_workers, drop_last=True,

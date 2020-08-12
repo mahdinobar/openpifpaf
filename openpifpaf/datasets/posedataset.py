@@ -57,7 +57,6 @@ class Posedataset(torch.utils.data.Dataset):
                 _all_names = np.delete(_all_names, arg_wrong, 0)
                 _all_annots =  np.delete(_all_annots, arg_wrong, 0)
 
-
         # remove repeated frames 3
         _wrong_names =  np.load('{}/annotations/wrong_correct_pose_dataset_3.npy'.format(self.image_dir))
         _wrong_names_str = []
@@ -85,14 +84,25 @@ class Posedataset(torch.utils.data.Dataset):
         # else:
         #     raise AssertionError('dataset mode is not defined!')
 
-        # train with 2 subjects(~82% data; 23817 data; all correctly annotated frames from name 0000001 to 0026584) and test with the rest 13 subjects(~18% data; 4991 data)
-        if self.mode=='training':
-            self.all_names = _all_names[:np.argwhere(_all_names == '0026584')[0][0]]
+        # # train with 2 subjects(~82% data; 23817 data; all correctly annotated frames from name 0000001 to 0026584) and test with the rest 13 subjects(~18% data; 4991 data)
+        # if self.mode=='training':
+        #     self.all_names = _all_names[:np.argwhere(_all_names == '0026584')[0][0]]
+        #
+        #     self.all_annots = _all_annots[:np.argwhere(_all_names == '0026584')[0][0], : ,:]
+        # elif self.mode=='evaluation':
+        #     self.all_names = _all_names[np.argwhere(_all_names == '0026584')[0][0]:]
+        #     self.all_annots = _all_annots[np.argwhere(_all_names == '0026584')[0][0]:, :, :]
+        # else:
+        #     raise AssertionError('dataset mode is not defined!')
 
-            self.all_annots = _all_annots[:np.argwhere(_all_names == '0026584')[0][0], : ,:]
+        # train with 1 subjects(~% data;  data; all correctly annotated frames from name 0000001 to 0025788) and test with the validation dataset wtih 15 subjects(~% data;  data)
+        if self.mode=='training':
+            self.all_names = _all_names[:np.argwhere(_all_names == '0025788')[0][0]]
+
+            self.all_annots = _all_annots[:np.argwhere(_all_names == '0025788')[0][0], : ,:]
         elif self.mode=='evaluation':
-            self.all_names = _all_names[np.argwhere(_all_names == '0026584')[0][0]:]
-            self.all_annots = _all_annots[np.argwhere(_all_names == '0026584')[0][0]:, :, :]
+            self.all_names = _all_names[np.argwhere(_all_names == '0025788')[0][0]:]
+            self.all_annots = _all_annots[np.argwhere(_all_names == '0025788')[0][0]:, :, :]
         else:
             raise AssertionError('dataset mode is not defined!')
 
@@ -202,5 +212,5 @@ class Posedataset(torch.utils.data.Dataset):
         return img, anns, meta
 
     def __len__(self):
-        print('self.all_names.shape[0]=',self.all_names.shape[0])
+        # print('self.mode={}; self.all_names.shape[0]={}'.format(self.mode, self.all_names.shape[0]))
         return self.all_names.shape[0]
