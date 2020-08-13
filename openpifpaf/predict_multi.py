@@ -1364,19 +1364,22 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
 
 
 def pose_dataset_multi_predict_google():
+    import logging
+    logger = logging.getLogger('ftpuploader')
     b = 0
     error_counter = 0
-    fail_flag = -1
-    successful_flag = 1
+    # fail_flag = -1
+    successful_flag = 2
     google_annot_array = []
+    google_annot_names = []
     index_fail_google_annotation = []
-    total_raw_frames = 6002
-    for index in range(10763+10625+2000+1200+1201, 10763+10625+2000+1200+1201+total_raw_frames):
+    total_raw_frames = 10697
+    for index in range(31792, 31792+total_raw_frames):
     # total_raw_frames = 4
     # for index in range(3000, 3004):
         try:
             b += 1
-            with open('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/images/{:07}'.format(index+1), 'rb') as f:
+            with open('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/images/{:07}'.format(index), 'rb') as f:
                 img = PIL.Image.open(f).convert('RGB')
 
             img = np.asarray(img)
@@ -1387,22 +1390,24 @@ def pose_dataset_multi_predict_google():
             assert pred.shape == (21, 2)
             pred = np.hstack((pred, successful_flag * np.ones((pred.shape[0], 1))))
             google_annot_array.append(pred)
+            google_annot_names.append('{:07}'.format(index))
             img = Image.fromarray(img.astype('uint8'), 'RGB')
             draw = ImageDraw.Draw(img)
             for annot_id in range(0,21):
                 draw.ellipse((pred[annot_id,0]-4, pred[annot_id,1]-4, pred[annot_id,0]+4, pred[annot_id,1]+4), fill='red', outline='red')
             # draw.ellipse((20, 20, 30, 30), fill = 'red', outline ='red')
-            img.save('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/annotations/preview_annotated_images/{:07}.png'.format(index+1))
+            img.save('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/preview_annotated_images/{:07}.png'.format(index))
             percent_completed = b / (total_raw_frames) * 100
             print('progress = {:.2f}, total error={}'.format(percent_completed, error_counter))
 
-        except:
+        except Exception as e:  # work on python 3.x
+            logger.error('Failed to upload to ftp: ' + str(e))
             error_counter += 1
             percent_completed = b / (total_raw_frames) * 100
             print('ERROR OCCURED!! progress = {:.2f}; total error={}'.format(percent_completed, error_counter))
             index_fail_google_annotation.append(index)
-            pred = fail_flag*np.ones((21,3))
-            google_annot_array.append(pred)
+            # pred = fail_flag*np.ones((21,3))
+            # google_annot_array.append(pred)
             continue
 
 
@@ -1411,7 +1416,9 @@ def pose_dataset_multi_predict_google():
         #     ax[0].annotate(txt, (pred[txt, 0], pred[txt, 1]), c='w')
         # plt.show()
 
-    np.save('/home/mahdi/HVR/hvr/data/iPad/comp_pose_dataset/annotations/google_annot_array.npy', google_annot_array)
+    np.save('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_array.npy', google_annot_array)
+    np.save('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_names.npy', google_annot_names)
+
 
 def pose_dataset_multi_predict_google_confirmation():
     all_annoted_frames_names = np.load('/home/mahdi/HVR/hvr/data/iPad/pose_dataset/annotations/all_annoted_frames_names_joined.npy')
@@ -1454,9 +1461,9 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch187'
     # checkpoint_name = 'shufflenetv2k16w-200810-234209-cif-caf-caf25-edge200-o10s.pkl.epoch320'
     # checkpoint_name = 'shufflenetv2k16w-200812-092552-cif-caf-edge200-o10s.pkl.epoch023'
-    checkpoint_name = 'shufflenetv2k16w-200811-215425-cif-caf-edge200-o10s.pkl.epoch006'
-    eval_dataset = 'pose_dataset'
-    posedataset_multi_predict(checkpoint_name, eval_dataset)
+    # checkpoint_name = 'shufflenetv2k16w-200811-215425-cif-caf-edge200-o10s.pkl.epoch006'
+    # eval_dataset = 'pose_dataset'
+    # posedataset_multi_predict(checkpoint_name, eval_dataset)
     # PCK_plot(checkpoint_name, eval_dataset)
 
 
@@ -1484,7 +1491,7 @@ if __name__ == '__main__':
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
-    # pose_dataset_multi_predict_google()
+    pose_dataset_multi_predict_google()
     # pose_dataset_multi_predict_google_confirmation()
 
 
