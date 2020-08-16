@@ -121,9 +121,20 @@ class Posedataset(torch.utils.data.Dataset):
         # train with 1 subjects(~% data;  data; all correctly annotated frames from name 0000001 to 0025788) and test with the validation dataset wtih 15 subjects(~% data;  data)
         if self.mode=='training':
             # self.all_names = _all_names[:np.argwhere(_all_names == '0025791')[0][0]]
-            self.all_names = np.concatenate((_all_names[:np.argwhere(_all_names == '0025791')[0][0]], _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
+
+            # self.all_names = np.concatenate((_all_names[:np.argwhere(_all_names == '0025791')[0][0]], _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
+
             # self.all_annots = _all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:]
-            self.all_annots = np.concatenate((_all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
+            # self.all_annots = np.concatenate((_all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
+
+            # select only number_random_select left hand images for training between 0000000 to 0025791
+            number_random_select = 3000
+            selected_id=np.random.choice(np.argwhere(_all_names == '0025791')[0][0], number_random_select, replace=False)
+            self.all_names = np.concatenate((_all_names[selected_id],
+                                             _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
+            self.all_annots = np.concatenate((_all_annots[selected_id], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
+
+
         elif self.mode=='evaluation':
             # self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:]
             self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:np.argwhere(_all_names == '0031792')[0][0]]

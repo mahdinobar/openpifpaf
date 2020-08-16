@@ -75,8 +75,16 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
 
         _all_names = np.load('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir))
         _all_annots = np.load('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir))
+
+        # array_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_array.npy')
+        # names_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_names.npy')
+        #
+        # np.save('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir), np.hstack((_all_names, names_2)))
+        # np.save('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir), np.concatenate((_all_annots, array_2)))
+
         # remove repeated frames 1
-        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset.csv'.format(self.image_dir), delimiter=',')[1:, 0].astype(int)
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset.csv'.format(self.image_dir),
+                                     delimiter=',')[1:, 0].astype(int)
         _wrong_names_str = []
         for w in range(0, _wrong_names.__len__()):
             _wrong_names_str.append("{:07}".format(_wrong_names[w]))
@@ -85,12 +93,13 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
 
         for ww in range(0, _wrong_names.__len__()):
             arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
-            if arg_wrong!=0:
+            if arg_wrong != 0:
                 _all_names = np.delete(_all_names, arg_wrong, 0)
-                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+                _all_annots = np.delete(_all_annots, arg_wrong, 0)
 
         # remove repeated frames 2
-        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset_2.csv'.format(self.image_dir), delimiter=',')[1:, 0].astype(int)
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset_2.csv'.format(self.image_dir),
+                                     delimiter=',')[1:, 0].astype(int)
         _wrong_names_str = []
         for w in range(0, _wrong_names.__len__()):
             _wrong_names_str.append("{:07}".format(_wrong_names[w]))
@@ -99,12 +108,12 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
 
         for ww in range(0, _wrong_names.__len__()):
             arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
-            if arg_wrong!=0:
+            if arg_wrong != 0:
                 _all_names = np.delete(_all_names, arg_wrong, 0)
-                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+                _all_annots = np.delete(_all_annots, arg_wrong, 0)
 
         # remove repeated frames 3
-        _wrong_names =  np.load('{}/annotations/wrong_correct_pose_dataset_3.npy'.format(self.image_dir))
+        _wrong_names = np.load('{}/annotations/wrong_correct_pose_dataset_3.npy'.format(self.image_dir))
         _wrong_names_str = []
         for w in range(0, _wrong_names.__len__()):
             _wrong_names_str.append("{:07}".format(_wrong_names[w]))
@@ -113,9 +122,24 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
 
         for ww in range(0, _wrong_names.__len__()):
             arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
-            if arg_wrong!=0:
+            if arg_wrong != 0:
                 _all_names = np.delete(_all_names, arg_wrong, 0)
-                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+                _all_annots = np.delete(_all_annots, arg_wrong, 0)
+
+        # remove repeated frames 4
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset_4.csv'.format(self.image_dir),
+                                     delimiter=',')[1:].astype(int)
+        _wrong_names_str = []
+        for w in range(0, _wrong_names.__len__()):
+            _wrong_names_str.append("{:07}".format(_wrong_names[w]))
+
+        _wrong_names_str = np.asarray(_wrong_names_str)
+
+        for ww in range(0, _wrong_names.__len__()):
+            arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
+            if arg_wrong != 0:
+                _all_names = np.delete(_all_names, arg_wrong, 0)
+                _all_annots = np.delete(_all_annots, arg_wrong, 0)
 
         # random split data
         # from sklearn.model_selection import train_test_split
@@ -142,13 +166,32 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
         #     raise AssertionError('dataset mode is not defined!')
 
         # train with 1 subjects(~% data;  data; all correctly annotated frames from name 0000001 to 0025788) and test with the validation dataset wtih 15 subjects(~% data;  data)
-        if self.mode=='training':
-            self.all_names = _all_names[:np.argwhere(_all_names == '0025788')[0][0]]
+        if self.mode == 'training':
+            # self.all_names = _all_names[:np.argwhere(_all_names == '0025791')[0][0]]
 
-            self.all_annots = _all_annots[:np.argwhere(_all_names == '0025788')[0][0], : ,:]
-        elif self.mode=='evaluation':
-            self.all_names = _all_names[np.argwhere(_all_names == '0025788')[0][0]:]
-            self.all_annots = _all_annots[np.argwhere(_all_names == '0025788')[0][0]:, :, :]
+            # self.all_names = np.concatenate((_all_names[:np.argwhere(_all_names == '0025791')[0][0]], _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
+
+            # self.all_annots = _all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:]
+            # self.all_annots = np.concatenate((_all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
+
+            # select only number_random_select left hand images for training between 0000000 to 0025791
+            number_random_select = 3000
+            selected_id = np.random.choice(np.argwhere(_all_names == '0025791')[0][0], number_random_select,
+                                           replace=False)
+            self.all_names = np.concatenate((_all_names[selected_id],
+                                             _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
+            self.all_annots = np.concatenate(
+                (_all_annots[selected_id], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, :, :]))
+
+
+        elif self.mode == 'evaluation':
+            # self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:]
+            self.all_names = _all_names[
+                             np.argwhere(_all_names == '0025791')[0][0]:np.argwhere(_all_names == '0031792')[0][0]]
+            # self.all_annots = _all_annots[np.argwhere(_all_names == '0025791')[0][0]:, :, :]
+            self.all_annots = _all_annots[
+                              np.argwhere(_all_names == '0025791')[0][0]:np.argwhere(_all_names == '0031792')[0][0], :,
+                              :]
         else:
             raise AssertionError('dataset mode is not defined!')
 
@@ -170,6 +213,70 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
         anns = [{'keypoints': self.all_annots[index, :, :]}]
         anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         anns[0].update({'iscrowd': 0})
+
+        # # # TODO uncomment for old trained rhd evaluation
+        # # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
+        # if anns.__len__() == 2:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        #     anns_coorect_matching_posedataset_2 = np.zeros_like(anns[1]['keypoints'])
+        #     anns_coorect_matching_posedataset_2[1, :] = anns[1]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset_2[2, :] = anns[1]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset_2[3, :] = anns[1]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset_2[4, :] = anns[1]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset_2[5, :] = anns[1]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset_2[6, :] = anns[1]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset_2[7, :] = anns[1]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset_2[8, :] = anns[1]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset_2[13, :] = anns[1]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset_2[14, :] = anns[1]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset_2[15, :] = anns[1]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset_2[16, :] = anns[1]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset_2[17, :] = anns[1]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset_2[18, :] = anns[1]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset_2[19, :] = anns[1]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset_2[20, :] = anns[1]['keypoints'][17, :]
+        #     anns[1]['keypoints'] = np.copy(anns_coorect_matching_posedataset_2)
+        #
+        # elif anns.__len__() == 1:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        # else:
+        #     raise AssertionError('frame index={} has no annotation!'.format(index))
 
         # import matplotlib.pyplot as plt
         # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
@@ -304,6 +411,70 @@ class ImageList_Panoptic(torch.utils.data.Dataset):
             ann['keypoints'][:, 1] -= y_offset
             ann['bbox'][0] -= x_offset
             ann['bbox'][1] -= y_offset
+
+        # # # TODO uncomment for old trained rhd evaluation
+        # # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
+        # if anns.__len__() == 2:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        #     anns_coorect_matching_posedataset_2 = np.zeros_like(anns[1]['keypoints'])
+        #     anns_coorect_matching_posedataset_2[1, :] = anns[1]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset_2[2, :] = anns[1]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset_2[3, :] = anns[1]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset_2[4, :] = anns[1]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset_2[5, :] = anns[1]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset_2[6, :] = anns[1]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset_2[7, :] = anns[1]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset_2[8, :] = anns[1]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset_2[13, :] = anns[1]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset_2[14, :] = anns[1]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset_2[15, :] = anns[1]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset_2[16, :] = anns[1]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset_2[17, :] = anns[1]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset_2[18, :] = anns[1]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset_2[19, :] = anns[1]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset_2[20, :] = anns[1]['keypoints'][17, :]
+        #     anns[1]['keypoints'] = np.copy(anns_coorect_matching_posedataset_2)
+        #
+        # elif anns.__len__() == 1:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        # else:
+        #     raise AssertionError('frame index={} has no annotation!'.format(index))
 
         # rescale image
         order = 1  # order of resize interpolation; 1 means linear interpolation
@@ -476,6 +647,71 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         anns = [{'keypoints': np.hstack((uv, visibility_flag*np.ones((uv.shape[0], 1))))}]
         anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
         anns[0].update({'iscrowd': 0})
+
+
+        # # TODO uncomment for old trained rhd evaluation
+        # # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
+        # if anns.__len__() == 2:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        #     anns_coorect_matching_posedataset_2 = np.zeros_like(anns[1]['keypoints'])
+        #     anns_coorect_matching_posedataset_2[1, :] = anns[1]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset_2[2, :] = anns[1]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset_2[3, :] = anns[1]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset_2[4, :] = anns[1]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset_2[5, :] = anns[1]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset_2[6, :] = anns[1]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset_2[7, :] = anns[1]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset_2[8, :] = anns[1]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset_2[13, :] = anns[1]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset_2[14, :] = anns[1]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset_2[15, :] = anns[1]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset_2[16, :] = anns[1]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset_2[17, :] = anns[1]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset_2[18, :] = anns[1]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset_2[19, :] = anns[1]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset_2[20, :] = anns[1]['keypoints'][17, :]
+        #     anns[1]['keypoints'] = np.copy(anns_coorect_matching_posedataset_2)
+        #
+        # elif anns.__len__() == 1:
+        #     anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+        #     anns_coorect_matching_posedataset[1, :] = anns[0]['keypoints'][4, :]
+        #     anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+        #     anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+        #     anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+        #     anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+        #     anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+        #     anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+        #     anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+        #     anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+        #     anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+        #     anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+        #     anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+        #     anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+        #     anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+        #     anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+        #     anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+        #     anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+        #
+        # else:
+        #     raise AssertionError('frame index={} has no annotation!'.format(index))
 
         # preprocess image and annotations
         img, anns, meta = self.preprocess(img, anns, meta)
@@ -682,6 +918,70 @@ class ImageList_RHD(torch.utils.data.Dataset):
             anns = list([anns_right_hand[0]])
             anns[0].update({'bbox': np.array([0, 0, img.size[0], img.size[1]])})
             anns[0].update({'iscrowd': 0})
+        else:
+            raise AssertionError('frame index={} has no annotation!'.format(index))
+
+
+        # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
+        if anns.__len__()==2:
+            anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+            anns_coorect_matching_posedataset[1,:] = anns[0]['keypoints'][4, :]
+            anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+            anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+            anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+            anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+            anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+            anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+            anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+            anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+            anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+            anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+            anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+            anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+            anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+            anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+            anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+            anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+
+            anns_coorect_matching_posedataset_2 = np.zeros_like(anns[1]['keypoints'])
+            anns_coorect_matching_posedataset_2[1,:] = anns[1]['keypoints'][4, :]
+            anns_coorect_matching_posedataset_2[2, :] = anns[1]['keypoints'][3, :]
+            anns_coorect_matching_posedataset_2[3, :] = anns[1]['keypoints'][2, :]
+            anns_coorect_matching_posedataset_2[4, :] = anns[1]['keypoints'][1, :]
+            anns_coorect_matching_posedataset_2[5, :] = anns[1]['keypoints'][8, :]
+            anns_coorect_matching_posedataset_2[6, :] = anns[1]['keypoints'][7, :]
+            anns_coorect_matching_posedataset_2[7, :] = anns[1]['keypoints'][6, :]
+            anns_coorect_matching_posedataset_2[8, :] = anns[1]['keypoints'][5, :]
+            anns_coorect_matching_posedataset_2[13, :] = anns[1]['keypoints'][16, :]
+            anns_coorect_matching_posedataset_2[14, :] = anns[1]['keypoints'][15, :]
+            anns_coorect_matching_posedataset_2[15, :] = anns[1]['keypoints'][14, :]
+            anns_coorect_matching_posedataset_2[16, :] = anns[1]['keypoints'][13, :]
+            anns_coorect_matching_posedataset_2[17, :] = anns[1]['keypoints'][20, :]
+            anns_coorect_matching_posedataset_2[18, :] = anns[1]['keypoints'][19, :]
+            anns_coorect_matching_posedataset_2[19, :] = anns[1]['keypoints'][18, :]
+            anns_coorect_matching_posedataset_2[20, :] = anns[1]['keypoints'][17, :]
+            anns[1]['keypoints'] = np.copy(anns_coorect_matching_posedataset_2)
+
+        elif anns.__len__()==1:
+            anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+            anns_coorect_matching_posedataset[1,:] = anns[0]['keypoints'][4, :]
+            anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+            anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+            anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+            anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+            anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+            anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+            anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+            anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+            anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+            anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+            anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+            anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+            anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+            anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+            anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+            anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+
         else:
             raise AssertionError('frame index={} has no annotation!'.format(index))
 

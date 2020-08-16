@@ -83,10 +83,10 @@ def factory(head_names):
     # return [factory_single_onehand10k(hn) for hn in head_names]
     # # uncomment for nyu dataset
     # return [factory_single_nyu(hn) for hn in head_names]
-    # # uncomment for posedataset dataset
-    # return [factory_single_posedataset(hn) for hn in head_names]
-    # uncomment for panoptic dataset
-    return [factory_single_panoptic(hn) for hn in head_names]
+    # uncomment for posedataset dataset
+    return [factory_single_posedataset(hn) for hn in head_names]
+    # # uncomment for panoptic dataset
+    # return [factory_single_panoptic(hn) for hn in head_names]
 
 def factory_single(head_name):
     if 'cifdet' in head_name:

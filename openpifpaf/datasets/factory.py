@@ -166,7 +166,7 @@ def train_freihand_preprocess_factory(
     return transforms.Compose([
         transforms.NormalizeAnnotations(),
         transforms.AnnotationJitter(),
-        transforms.RandomApply(transforms.HFlip(FREIHAND_KEYPOINTS, FREIHAND_HFLIP), 0.5),
+        transforms.RandomApply(transforms.HFlip(FREIHAND_KEYPOINTS, FREIHAND_HFLIP), 0.50),
         rescale_t,
         transforms.Crop(square_edge, use_area_of_interest=True),
         transforms.CenterPad(square_edge),

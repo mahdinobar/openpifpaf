@@ -652,10 +652,10 @@ def rhd_multi_predict(checkpoint_name, eval_dataset):
             percent_completed=b/data.__len__()*100
             print('progress = {:.2f}'.format(percent_completed))
     print('failure_counter = {}'.format(failure_counter))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/index_array.npy'.format(checkpoint_name),index_array)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/pred_array.npy'.format(checkpoint_name),pred_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,checkpoint_name),index_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name),pred_array)
     np.save(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/rhd/{}/gt_array.npy'.format(checkpoint_name), gt_array)
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,checkpoint_name), gt_array)
 
 
 
@@ -750,7 +750,8 @@ def posedataset_multi_predict(checkpoint_name, eval_dataset):
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name),pred_array)
     np.save(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset, checkpoint_name), gt_array)
-
+    np.save(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(eval_dataset, checkpoint_name), pred_names)
 
 
 
@@ -913,6 +914,10 @@ def PCK_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
+    pred_names = np.load(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(
+            eval_dataset, checkpoint_name))
+
     # index_array = np.load(
     #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
     #                                                                                                        checkpoint_name))
@@ -1008,6 +1013,12 @@ def PCK_plot(checkpoint_name, eval_dataset):
             #     print('index at pred_array={}, no. data out thresh={}'.format(data_id,_norms.shape[0]-sum(_norms < PCK_thresh)))
             total_correct_data += sum(_norms < PCK_thresh)
             total_counted_data += _norms.shape[0]
+
+            # for debug: sho names of wrong frames
+            if PCK_thresh == np.linspace(0, 30, 60)[30]:
+                if sum(_norms > PCK_thresh)>4:
+                    print('***large error***PCK_thresh={};pred_names[data_id]={};_norms={}'.format(PCK_thresh,pred_names[data_id][-7:],_norms))
+
             # # modified definition: count failures
             # total_counted_data += sum(bool_gt_acceptable_data)
 
@@ -1031,13 +1042,13 @@ def PCK_plot(checkpoint_name, eval_dataset):
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
 
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs_hflipped.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs.npy'.format(
         eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers_hflipped.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers.npy'.format(
         eval_dataset, checkpoint_name), y_joints)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh_hflipped.npy'.format(
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/PCK_thresh.npy'.format(
         eval_dataset, checkpoint_name), PCK_thresh)
-    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y_hflipped.npy'.format(eval_dataset,
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
                                                                                                         checkpoint_name),
             y)
 
@@ -1083,15 +1094,23 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
     from sklearn.metrics import auc
     AUC = auc(PCK_thresh, np.asarray(y))/max_error
+    # AUC_attention = auc(attention_paper_2DPCK_PXLs_freihand[:,0], attention_paper_2DPCK_PXLs_freihand[:,1])/max_error
+    # AUC_mobilepose = auc(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1])/max_error
+    # AUC_efficientdet = auc(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1])/max_error
+
     # AUC2 = auc(RGBPI_2DPCKvsPXLs[:, 0], RGBPI_2DPCKvsPXLs[:, 1])/(max(RGBPI_2DPCKvsPXLs[:, 0])-min(RGBPI_2DPCKvsPXLs[:,0]))
 
     print('AUC of 2PCKvsPX is =',AUC)
+    # print('AUC_attention of 2PCKvsPX is =',AUC_attention)
+    # print('AUC_mobilepose of 2PCKvsPX is =',AUC_mobilepose)
+    # print('AUC_efficientdet of 2PCKvsPX is =',AUC_efficientdet)
+
 
     fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(12, 8))
     axes.plot(PCK_thresh, np.asarray(y), label='handPifPaf', c='b')
-    axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
-    axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
-    axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
+    # axes.plot(attention_paper_2DPCK_PXLs_freihand[:, 0], attention_paper_2DPCK_PXLs_freihand[:, 1], label='Attention', c='m')
+    # axes.plot(MobilePose_paper_2DPCK_PXLs_freihand[:, 0], MobilePose_paper_2DPCK_PXLs_freihand[:, 1], label='MobilePose224V2', c='g')
+    # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
     # axes.plot(CPM_2DPCKvsPXLs[:, 0], CPM_2DPCKvsPXLs[:, 1], label='CPM', c='green')
     # axes.plot(CPM_gt_2DPCKvsPXLs[:, 0], CPM_gt_2DPCKvsPXLs[:, 1], label='CPM_gt', c='orange')
     # axes.plot(CPMAtt_2DPCKvsPXLs[:, 0], CPMAtt_2DPCKvsPXLs[:, 1], label='CPMAtt', c='olive')
@@ -1490,7 +1509,6 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200812-092552-cif-caf-edge200-o10s.pkl.epoch023'
     # checkpoint_name = 'shufflenetv2k16w-200811-215425-cif-caf-edge200-o10s.pkl.epoch006'
     # eval_dataset = 'pose_dataset'
-    # posedataset_multi_predict(checkpoint_name, eval_dataset)
 
 
     # posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
@@ -1503,19 +1521,23 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
     # checkpoint_name = 'shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch320'
     # checkpoint_name = 'shufflenetv2k16w-200721-232112-cif-caf-caf25-edge200.pkl.epoch148'
-    checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
-    eval_dataset = 'panoptic'
+    # checkpoint_name = 'test_on_panoptic/shufflenetv2k16w-200721-232112-cif-caf-caf25-edge200.pkl.epoch148'
+    # checkpoint_name = 'test_on_rhd/shufflenetv2k16w-200721-232112-cif-caf-caf25-edge200.pkl.epoch148'
+    # checkpoint_name = 'test_on_freihand/shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
+    # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
+
+    # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022'
+    checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036'
+    eval_dataset = 'ALL'
+
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
-
     # freihand_multi_predict(checkpoint_name, eval_dataset)
-    # PCK_plot(checkpoint_name, eval_dataset)
-
-
     # rhd_multi_predict(checkpoint_name, eval_dataset)
+    posedataset_multi_predict(checkpoint_name, eval_dataset)
 
+    PCK_plot(checkpoint_name, eval_dataset)
 
-    PCK_normalized_plot(checkpoint_name, eval_dataset)
-
+    # PCK_normalized_plot(checkpoint_name, eval_dataset)
 
     # onehand10k_multi_predict(checkpoint_name, eval_dataset)
 

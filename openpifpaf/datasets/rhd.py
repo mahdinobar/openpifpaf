@@ -84,13 +84,87 @@ class Rhd(torch.utils.data.Dataset):
         else:
             raise AssertionError('frame index={} has no annotation!'.format(index))
 
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots(1, 2, figsize=(12, 12))
-        # ax[0].imshow(np.asarray(img))
-        # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2]==2
-        # ax[0].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1], 'ro')
-        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
-        # ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
+
+
+        # TODO
+        # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
+        if anns.__len__()==2:
+            anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+            anns_coorect_matching_posedataset[1,:] = anns[0]['keypoints'][4, :]
+            anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+            anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+            anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+            anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+            anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+            anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+            anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+            anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+            anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+            anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+            anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+            anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+            anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+            anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+            anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+            anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+
+            anns_coorect_matching_posedataset_2 = np.zeros_like(anns[1]['keypoints'])
+            anns_coorect_matching_posedataset_2[1,:] = anns[1]['keypoints'][4, :]
+            anns_coorect_matching_posedataset_2[2, :] = anns[1]['keypoints'][3, :]
+            anns_coorect_matching_posedataset_2[3, :] = anns[1]['keypoints'][2, :]
+            anns_coorect_matching_posedataset_2[4, :] = anns[1]['keypoints'][1, :]
+            anns_coorect_matching_posedataset_2[5, :] = anns[1]['keypoints'][8, :]
+            anns_coorect_matching_posedataset_2[6, :] = anns[1]['keypoints'][7, :]
+            anns_coorect_matching_posedataset_2[7, :] = anns[1]['keypoints'][6, :]
+            anns_coorect_matching_posedataset_2[8, :] = anns[1]['keypoints'][5, :]
+            anns_coorect_matching_posedataset_2[13, :] = anns[1]['keypoints'][16, :]
+            anns_coorect_matching_posedataset_2[14, :] = anns[1]['keypoints'][15, :]
+            anns_coorect_matching_posedataset_2[15, :] = anns[1]['keypoints'][14, :]
+            anns_coorect_matching_posedataset_2[16, :] = anns[1]['keypoints'][13, :]
+            anns_coorect_matching_posedataset_2[17, :] = anns[1]['keypoints'][20, :]
+            anns_coorect_matching_posedataset_2[18, :] = anns[1]['keypoints'][19, :]
+            anns_coorect_matching_posedataset_2[19, :] = anns[1]['keypoints'][18, :]
+            anns_coorect_matching_posedataset_2[20, :] = anns[1]['keypoints'][17, :]
+            anns[1]['keypoints'] = np.copy(anns_coorect_matching_posedataset_2)
+
+        elif anns.__len__()==1:
+            anns_coorect_matching_posedataset = np.zeros_like(anns[0]['keypoints'])
+            anns_coorect_matching_posedataset[1,:] = anns[0]['keypoints'][4, :]
+            anns_coorect_matching_posedataset[2, :] = anns[0]['keypoints'][3, :]
+            anns_coorect_matching_posedataset[3, :] = anns[0]['keypoints'][2, :]
+            anns_coorect_matching_posedataset[4, :] = anns[0]['keypoints'][1, :]
+            anns_coorect_matching_posedataset[5, :] = anns[0]['keypoints'][8, :]
+            anns_coorect_matching_posedataset[6, :] = anns[0]['keypoints'][7, :]
+            anns_coorect_matching_posedataset[7, :] = anns[0]['keypoints'][6, :]
+            anns_coorect_matching_posedataset[8, :] = anns[0]['keypoints'][5, :]
+            anns_coorect_matching_posedataset[13, :] = anns[0]['keypoints'][16, :]
+            anns_coorect_matching_posedataset[14, :] = anns[0]['keypoints'][15, :]
+            anns_coorect_matching_posedataset[15, :] = anns[0]['keypoints'][14, :]
+            anns_coorect_matching_posedataset[16, :] = anns[0]['keypoints'][13, :]
+            anns_coorect_matching_posedataset[17, :] = anns[0]['keypoints'][20, :]
+            anns_coorect_matching_posedataset[18, :] = anns[0]['keypoints'][19, :]
+            anns_coorect_matching_posedataset[19, :] = anns[0]['keypoints'][18, :]
+            anns_coorect_matching_posedataset[20, :] = anns[0]['keypoints'][17, :]
+            anns[0]['keypoints'] = np.copy(anns_coorect_matching_posedataset)
+
+        else:
+            raise AssertionError('frame index={} has no annotation!'.format(index))
+
+        # uncomment for debug
+        # if anns.__len__()==2:
+        #     import matplotlib.pyplot as plt
+        #     fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+        #     ax[0].imshow(np.asarray(img))
+        #     bool_annotated_joints_1 = anns[0]['keypoints'][:, 2]==2
+        #     ax[0].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1], 'ro')
+        #     bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        #     ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
+        #     for txt in range(0,  21):#keypointsUV.shape[0]):
+        #         if bool_annotated_joints_1[txt]==True:
+        #             ax[0].annotate(txt, (anns[0]['keypoints'][txt, 0]+3, anns[0]['keypoints'][txt, 1]+3), c='w', bbox=dict(fc=(.2, .2, .2), lw=0, pad=1))
+        #         if bool_annotated_joints_2[txt]==True:
+        #             ax[0].annotate(txt, (anns[1]['keypoints'][txt, 0]+3, anns[1]['keypoints'][txt, 1]+3), c='w', bbox=dict(fc=(.2, .2, .2), lw=0, pad=1))
+
 
         # rescale image
         order = 1  # order of resize interpolation; 1 means linear interpolation
@@ -138,14 +212,21 @@ class Rhd(torch.utils.data.Dataset):
             ann['bbox'][2] += pad_left
             ann['bbox'][3] += pad_up
 
-        # ax[1].imshow(np.asarray(img))
-        # bool_annotated_joints_1 = anns[0]['keypoints'][:, 2] == 2
-        # ax[1].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1],
-        #            'ro')
-        # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
-        # ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
-        #            'go')
-        # plt.show()
+        # uncomment for debug
+        # if anns.__len__()==2:
+        #     ax[1].imshow(np.asarray(img))
+        #     bool_annotated_joints_1 = anns[0]['keypoints'][:, 2] == 2
+        #     ax[1].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1],
+        #                'ro')
+        #     bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
+        #     ax[1].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1],
+        #                'go')
+        #     for txt in range(0,  21):#keypointsUV.shape[0]):
+        #         if bool_annotated_joints_1[txt]==True:
+        #             ax[1].annotate(txt, (anns[0]['keypoints'][txt, 0]+3, anns[0]['keypoints'][txt, 1]+3), c='w', bbox=dict(fc=(.2, .2, .2), lw=0, pad=1))
+        #         if bool_annotated_joints_2[txt]==True:
+        #             ax[1].annotate(txt, (anns[1]['keypoints'][txt, 0]+3, anns[1]['keypoints'][txt, 1]+3), c='w', bbox=dict(fc=(.2, .2, .2), lw=0, pad=1))
+        #     plt.show()
 
         meta = None
 

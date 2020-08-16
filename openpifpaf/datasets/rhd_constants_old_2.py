@@ -1,11 +1,12 @@
 import numpy as np
 
 RHD_HAND_SKELETON = [
-    (1, 2), (2, 3), (3, 4), (4, 5),
-    (1, 6), (6, 7), (7, 8), (8, 9),
-    (1, 10), (10, 11), (11, 12), (12, 13),
-    (1, 14), (14, 15), (15, 16), (16, 17),
-    (1, 18), (18, 19), (19, 20), (20, 21),
+#     left/right hands
+    (1,5), (5,4), (4,3), (3,2),
+    (1,9), (9,8), (8,7), (7,6),
+    (1,13), (13,12), (12,11), (11,10),
+    (1,17), (17,16), (16,15), (15,14),
+    (1,21), (21,20), (20,19), (19,18),
 ]
 
 RHD_KINEMATIC_TREE_SKELETON = RHD_HAND_SKELETON
@@ -13,51 +14,52 @@ RHD_KINEMATIC_TREE_SKELETON = RHD_HAND_SKELETON
 
 RHD_KEYPOINTS = [
     'palm',  # 1
-    'thumb_mcp',  # 2
-    'thumb_pip',  # 3
-    'thumb_dip',  # 4
-    'thumb_tip',  # 5
-    'index_mcp',  # 6
-    'index_pip',  # 7
-    'index_dip',  # 8
-    'index_tip',  # 9
-    'middle_mcp',  # 10
-    'middle_pip',  # 11
-    'middle_dip',  # 12
-    'middle_tip',  # 13
-    'ring_mcp',  # 14
-    'ring_pip',  # 15
-    'ring_dip',  # 16
-    'ring_tip',  # 17
-    'little_mcp',  # 18
-    'little_pip',  # 19
-    'little_dip',  # 20
-    'little_tip',  # 21
+    'thumb_tip',  # 2
+    'thumb_dip',  # 3
+    'thumb_pip',  # 4
+    'thumb_mcp',  # 5
+    'index_tip',  # 6
+    'index_dip',  # 7
+    'index_pip',  # 8
+    'index_mcp',  # 9
+    'middle_tip',  # 10
+    'middle_dip',  # 11
+    'middle_pip',  # 12
+    'middle_mcp',  # 13
+    'ring_tip',  # 14
+    'ring_dip',  # 15
+    'ring_pip',  # 16
+    'ring_mcp',  # 17
+    'little_tip',  # 18
+    'little_dip',  # 19
+    'little_pip',  # 20
+    'little_mcp',  # 21
 ]
 
 
 RHD_UPRIGHT_POSE = np.array([
-    [0 ,0 , 2.0], # 'palm',  # 1
-    [0.33 ,0.4 , 2.0], #thumb_mcp',  # 2
-    [0.45 ,0.6 , 2.0], #thumb_pip',  # 3
-    [0.5 ,.8 , 2.0], #thumb_dip',  # 4
-    [0.54 ,1. , 2.0], #thumb_tip',  # 5
-    [0.25 ,0.75 , 2.0], #index_mcp',  # 6
-    [0.25 ,1. , 2.0], #index_pip',  # 7
-    [0.25 ,1.25 , 2.0], #index_dip',  # 8
-    [0.25 ,1.5 , 2.0], #index_tip',  # 9
-    [0. ,0.75 , 2.0], #middle_mcp',  # 10
-    [0. ,1. , 2.0], #middle_pip',  # 11
-    [0. ,1.25 , 2.0], #middle_dip',  # 12
-    [0. ,1.5 , 2.0], #middle_tip',  # 13
-    [-0.25 ,0.75 , 2.0], #ring_mcp',  # 14
-    [-0.25 ,1. , 2.0], #ring_pip',  # 15
-    [-0.25 ,1.25 , 2.0], #ring_dip',  # 16
-    [-0.25 ,1.5 , 2.0], #ring_tip',  # 17
-    [-0.5 ,0.75 , 2.0], #little_mcp',  # 18
-    [-0.5 ,1. , 2.0], #little_pip',  # 19
-    [-0.5 ,1.25 , 2.0], #little_dip',  # 20
-    [-0.5 ,1.5 , 2.0], #little_tip',  # 21
+    # left/right hands
+    [0, 0, 2.0],  # 'palm',  # 1
+    [0.54, 1., 2.0],  # 'thumb_tip',  # 2
+    [0.5, 0.8, 2.0],  # 'thumb_dip',  # 3
+    [0.45, .6, 2.0],  # 'thumb_pip',  # 4
+    [0.33, .4, 2.0],  # 'thumb_mcp',  # 5
+    [0.25, 1.5, 2.0],  # 'index_tip',  # 6
+    [0.25, 1.25, 2.0],  # 'index_dip',  # 7
+    [0.25, 1., 2.0],  # 'index_pip',  # 8
+    [0.25, .75, 2.0],  # 'index_mcp',  # 9
+    [0., 1.5, 2.0],  # 'middle_tip',  # 10
+    [0., 1.25, 2.0],  # 'middle_dip',  # 11
+    [0., 1., 2.0],  # 'middle_pip',  # 12
+    [0., .75, 2.0],  # 'middle_mcp',  # 13
+    [-0.25, 1.5, 2.0],  # 'ring_tip',  # 14
+    [-0.25, 1.25, 2.0],  # 'ring_dip',  # 15
+    [-0.25, 1., 2.0],  # 'ring_pip',  # 16
+    [-0.25, .75, 2.0],  # 'ring_mcp',  # 17
+    [-0.5, 1.5, 2.0],  # 'little_tip',  # 18
+    [-0.5, 1.25, 2.0],  # 'little_dip',  # 19
+    [-0.5, 1., 2.0],  # 'little_pip',  # 20
+    [-0.5, .75, 2.0],  # 'little_mcp',  # 21
 ])
 
 
@@ -86,12 +88,12 @@ RHD_HFLIP = {
 
 
 DENSER_RHD_HAND_SKELETON = [
-    (1, 2), (2, 3), (3, 4), (4, 5),
-    (1, 6), (6, 7), (7, 8), (8, 9),
-    (1, 10), (10, 11), (11, 12), (12, 13),
-    (1, 14), (14, 15), (15, 16), (16, 17),
-    (1, 18), (18, 19), (19, 20), (20, 21),
-    (6, 10), (10, 14), (14, 18),
+    #     left/right hands
+    (1, 5), (5, 4), (4, 3), (3, 2),
+    (1, 9), (9, 8), (8, 7), (7, 6), (9,13),
+    (1, 13), (13, 12), (12, 11), (11, 10), (13,17),
+    (1, 17), (17, 16), (16, 15), (15, 14), (17,21),
+    (1, 21), (21, 20), (20, 19), (19, 18),
 ]
 
 
@@ -111,19 +113,19 @@ RHD_HAND_SIGMAS = [
     0.05, # 'index_mcp',  # 6
     0.05, # 'index_pip',  # 7
     0.05, # 'index_dip',  # 8
-    0.05, #'index_tip',  # 9
-    0.05, #'middle_mcp',  # 10
-    0.05, #'middle_pip',  # 11
-    0.05, #'middle_dip',  # 12
-    0.05, #'middle_tip',  # 13
-    0.05, #'ring_mcp',  # 14
-    0.05, #'ring_pip',  # 15
-    0.05, #'ring_dip',  # 16
-    0.05, #'ring_tip',  # 17
-    0.05, #'little_mcp',  # 18
-    0.05, #'little_pip',  # 19
-    0.05, #'little_dip',  # 20
-    0.05, #'little_tip', # 21
+    0.05, # 'index_tip',  # 9
+    0.05, # 'middle_mcp',  # 10
+    0.05, # 'middle_pip',  # 11
+    0.05, # 'middle_dip',  # 12
+    0.05, # 'middle_tip',  # 13
+    0.05, # 'ring_mcp',  # 14
+    0.05, # 'ring_pip',  # 15
+    0.05, # 'ring_dip',  # 16
+    0.05, # 'ring_tip',  # 17
+    0.05, # 'little_mcp',  # 18
+    0.05, # 'little_pip',  # 19
+    0.05, # 'little_dip',  # 20
+    0.05, # 'little_tip', # 21
 ]
 
 
