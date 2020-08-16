@@ -128,11 +128,15 @@ class Posedataset(torch.utils.data.Dataset):
             # self.all_annots = np.concatenate((_all_annots[:np.argwhere(_all_names == '0025791')[0][0], : ,:], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
 
             # select only number_random_select left hand images for training between 0000000 to 0025791
-            number_random_select = 3000
+            number_random_select = 3700
             selected_id=np.random.choice(np.argwhere(_all_names == '0025791')[0][0], number_random_select, replace=False)
+
+            number_random_select_2 = 2500
+            selected_id_2=np.random.choice(np.arange(np.argwhere(_all_names == '0031792')[0][0], np.argwhere(_all_names == '0036293')[0][0]), number_random_select_2, replace=False)
+
             self.all_names = np.concatenate((_all_names[selected_id],
-                                             _all_names[np.argwhere(_all_names == '0031792')[0][0]:]))
-            self.all_annots = np.concatenate((_all_annots[selected_id], _all_annots[np.argwhere(_all_names == '0031792')[0][0]:, : ,:]))
+                                             _all_names[selected_id_2]))
+            self.all_annots = np.concatenate((_all_annots[selected_id], _all_annots[selected_id_2]))
 
 
         elif self.mode=='evaluation':

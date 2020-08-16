@@ -38,26 +38,26 @@ POSEDATASET_KEYPOINTS = [
 
 POSEDATASET_UPRIGHT_POSE = np.array([
     [0 ,0 , 2.0], # 'palm',  # 1
-    [0.33 ,0.4 , 2.0], #thumb_mcp',  # 2
-    [0.45 ,0.6 , 2.0], #thumb_pip',  # 3
-    [0.5 ,.8 , 2.0], #thumb_dip',  # 4
-    [0.54 ,1. , 2.0], #thumb_tip',  # 5
+    [0.35 ,0.25 , 2.0], #thumb_mcp',  # 2
+    [0.55 ,0.4 , 2.0], #thumb_pip',  # 3
+    [0.69 ,.6 , 2.0], #thumb_dip',  # 4
+    [0.83 ,.72 , 2.0], #thumb_tip',  # 5
     [0.25 ,0.75 , 2.0], #index_mcp',  # 6
-    [0.25 ,1. , 2.0], #index_pip',  # 7
-    [0.25 ,1.25 , 2.0], #index_dip',  # 8
-    [0.25 ,1.5 , 2.0], #index_tip',  # 9
+    [0.27 ,1. , 2.0], #index_pip',  # 7
+    [0.28 ,1.25 , 2.0], #index_dip',  # 8
+    [0.3 ,1.5 , 2.0], #index_tip',  # 9
     [0. ,0.75 , 2.0], #middle_mcp',  # 10
     [0. ,1. , 2.0], #middle_pip',  # 11
     [0. ,1.25 , 2.0], #middle_dip',  # 12
     [0. ,1.5 , 2.0], #middle_tip',  # 13
     [-0.25 ,0.75 , 2.0], #ring_mcp',  # 14
-    [-0.25 ,1. , 2.0], #ring_pip',  # 15
-    [-0.25 ,1.25 , 2.0], #ring_dip',  # 16
-    [-0.25 ,1.5 , 2.0], #ring_tip',  # 17
+    [-0.26 ,1. , 2.0], #ring_pip',  # 15
+    [-0.27 ,1.25 , 2.0], #ring_dip',  # 16
+    [-0.28 ,1.5 , 2.0], #ring_tip',  # 17
     [-0.5 ,0.75 , 2.0], #little_mcp',  # 18
-    [-0.5 ,1. , 2.0], #little_pip',  # 19
-    [-0.5 ,1.25 , 2.0], #little_dip',  # 20
-    [-0.5 ,1.5 , 2.0], #little_tip',  # 21
+    [-0.54 ,1. , 2.0], #little_pip',  # 19
+    [-0.57 ,1.25 , 2.0], #little_dip',  # 20
+    [-0.6 ,1.5 , 2.0], #little_tip',  # 21
 ])
 
 
@@ -103,11 +103,11 @@ DENSER_POSEDATASET_HAND_CONNECTIONS = [
 
 
 POSEDATASET_HAND_SIGMAS = [
-    0.10, # 'palm',  # 1
-    0.05, # 'thumb_mcp',  # 2
-    0.05, # 'thumb_pip',  # 3
-    0.05, # 'thumb_dip',  # 4
-    0.05, # 'thumb_tip',  # 5
+    0.1, # 'palm',  # 1
+    0.07, # 'thumb_mcp',  # 2
+    0.07, # 'thumb_pip',  # 3
+    0.07, # 'thumb_dip',  # 4
+    0.07, # 'thumb_tip',  # 5
     0.05, # 'index_mcp',  # 6
     0.05, # 'index_pip',  # 7
     0.05, # 'index_dip',  # 8

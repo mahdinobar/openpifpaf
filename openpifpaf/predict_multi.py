@@ -952,6 +952,36 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
         correction_factor = 1 # (320 / 224) for rhd_resize
         for data_id in range(0, pred_array.shape[0]):
+
+            # guided head
+            # exchange thumb and index with little and ring if thumb_mcp is further than little_mcp to the palm
+            # _palm = pred_array[data_id, 0, :2]
+            # _thumb_mcp = pred_array[data_id, 1, :2]
+            # _little_mcp = pred_array[data_id, 17, :2]
+            if all([pred_array.shape[1]==21, pred_array[data_id, 0, 2]>pred_score_thresh, pred_array[data_id, 1, 2]>pred_score_thresh, pred_array[data_id, 17, 2]>pred_score_thresh, np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 17, :2], axis=0)<np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 1, :2], axis=0)]):
+                correct_pred = np.zeros_like(pred_array[data_id, :, :])
+
+                correct_pred[1, :] = pred_array[data_id, 17, :]
+                correct_pred[2, :] = pred_array[data_id, 18, :]
+                correct_pred[3, :] = pred_array[data_id, 19, :]
+                correct_pred[4, :] = pred_array[data_id, 20, :]
+                correct_pred[17, :] = pred_array[data_id, 1, :]
+                correct_pred[18, :] = pred_array[data_id, 2, :]
+                correct_pred[19, :] = pred_array[data_id, 3, :]
+                correct_pred[20, :] = pred_array[data_id, 4, :]
+                correct_pred[5, :] = pred_array[data_id, 13, :]
+                correct_pred[6, :] = pred_array[data_id, 14, :]
+                correct_pred[7, :] = pred_array[data_id, 15, :]
+                correct_pred[8, :] = pred_array[data_id, 16, :]
+                correct_pred[13, :] = pred_array[data_id, 5, :]
+                correct_pred[14, :] = pred_array[data_id, 6, :]
+                correct_pred[15, :] = pred_array[data_id, 7, :]
+                correct_pred[16, :] = pred_array[data_id, 8, :]
+                pred_array[data_id, :, :] = correct_pred
+                del correct_pred
+                print('!!!!!!!!guided_head!!!!!!!PCK_thresh={};pred_names[data_id]={}'.format(PCK_thresh,
+                                                                                              pred_names[data_id][-7:]))
+
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
             bool_acceptable_data = (pred_array[data_id, :, 2] > pred_score_thresh) * (
@@ -1527,13 +1557,15 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
 
     # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022'
-    checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036'
+    # checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
+    checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022_guided_head'
     eval_dataset = 'ALL'
 
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
     # freihand_multi_predict(checkpoint_name, eval_dataset)
     # rhd_multi_predict(checkpoint_name, eval_dataset)
-    posedataset_multi_predict(checkpoint_name, eval_dataset)
+
+    # posedataset_multi_predict(checkpoint_name, eval_dataset)
 
     PCK_plot(checkpoint_name, eval_dataset)
 
