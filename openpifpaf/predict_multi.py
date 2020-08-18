@@ -564,6 +564,8 @@ def rhd_multi_predict(checkpoint_name, eval_dataset):
             if preprocess is not None:
                 pred = preprocess.annotations_inverse(pred, meta)
 
+            print('pred=', pred)
+
             failure_counter = 0
             # error = pred[0].data - gt[0]['keypoints']
             # pred[2].json_data()['score']
@@ -651,7 +653,7 @@ def rhd_multi_predict(checkpoint_name, eval_dataset):
             # print('b={}'.format(b))
             percent_completed=b/data.__len__()*100
             print('progress = {:.2f}'.format(percent_completed))
-    print('failure_counter = {}'.format(failure_counter))
+            print('failure_counter = {}'.format(failure_counter))
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,checkpoint_name),index_array)
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name),pred_array)
     np.save(
@@ -914,9 +916,9 @@ def PCK_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
-    pred_names = np.load(
-        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(
-            eval_dataset, checkpoint_name))
+    # pred_names = np.load(
+    #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(
+    #         eval_dataset, checkpoint_name))
 
     # index_array = np.load(
     #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
@@ -953,34 +955,34 @@ def PCK_plot(checkpoint_name, eval_dataset):
         correction_factor = 1 # (320 / 224) for rhd_resize
         for data_id in range(0, pred_array.shape[0]):
 
-            # guided head
-            # exchange thumb and index with little and ring if thumb_mcp is further than little_mcp to the palm
-            # _palm = pred_array[data_id, 0, :2]
-            # _thumb_mcp = pred_array[data_id, 1, :2]
-            # _little_mcp = pred_array[data_id, 17, :2]
-            if all([pred_array.shape[1]==21, pred_array[data_id, 0, 2]>pred_score_thresh, pred_array[data_id, 1, 2]>pred_score_thresh, pred_array[data_id, 17, 2]>pred_score_thresh, np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 17, :2], axis=0)<np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 1, :2], axis=0)]):
-                correct_pred = np.zeros_like(pred_array[data_id, :, :])
-
-                correct_pred[1, :] = pred_array[data_id, 17, :]
-                correct_pred[2, :] = pred_array[data_id, 18, :]
-                correct_pred[3, :] = pred_array[data_id, 19, :]
-                correct_pred[4, :] = pred_array[data_id, 20, :]
-                correct_pred[17, :] = pred_array[data_id, 1, :]
-                correct_pred[18, :] = pred_array[data_id, 2, :]
-                correct_pred[19, :] = pred_array[data_id, 3, :]
-                correct_pred[20, :] = pred_array[data_id, 4, :]
-                correct_pred[5, :] = pred_array[data_id, 13, :]
-                correct_pred[6, :] = pred_array[data_id, 14, :]
-                correct_pred[7, :] = pred_array[data_id, 15, :]
-                correct_pred[8, :] = pred_array[data_id, 16, :]
-                correct_pred[13, :] = pred_array[data_id, 5, :]
-                correct_pred[14, :] = pred_array[data_id, 6, :]
-                correct_pred[15, :] = pred_array[data_id, 7, :]
-                correct_pred[16, :] = pred_array[data_id, 8, :]
-                pred_array[data_id, :, :] = correct_pred
-                del correct_pred
-                print('!!!!!!!!guided_head!!!!!!!PCK_thresh={};pred_names[data_id]={}'.format(PCK_thresh,
-                                                                                              pred_names[data_id][-7:]))
+            # # guided head
+            # # exchange thumb and index with little and ring if thumb_mcp is further than little_mcp to the palm
+            # # _palm = pred_array[data_id, 0, :2]
+            # # _thumb_mcp = pred_array[data_id, 1, :2]
+            # # _little_mcp = pred_array[data_id, 17, :2]
+            # if all([pred_array.shape[1]==21, pred_array[data_id, 0, 2]>pred_score_thresh, pred_array[data_id, 1, 2]>pred_score_thresh, pred_array[data_id, 17, 2]>pred_score_thresh, np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 17, :2], axis=0)<np.linalg.norm(pred_array[data_id, 0, :2] - pred_array[data_id, 1, :2], axis=0)]):
+            #     correct_pred = np.zeros_like(pred_array[data_id, :, :])
+            #
+            #     correct_pred[1, :] = pred_array[data_id, 17, :]
+            #     correct_pred[2, :] = pred_array[data_id, 18, :]
+            #     correct_pred[3, :] = pred_array[data_id, 19, :]
+            #     correct_pred[4, :] = pred_array[data_id, 20, :]
+            #     correct_pred[17, :] = pred_array[data_id, 1, :]
+            #     correct_pred[18, :] = pred_array[data_id, 2, :]
+            #     correct_pred[19, :] = pred_array[data_id, 3, :]
+            #     correct_pred[20, :] = pred_array[data_id, 4, :]
+            #     correct_pred[5, :] = pred_array[data_id, 13, :]
+            #     correct_pred[6, :] = pred_array[data_id, 14, :]
+            #     correct_pred[7, :] = pred_array[data_id, 15, :]
+            #     correct_pred[8, :] = pred_array[data_id, 16, :]
+            #     correct_pred[13, :] = pred_array[data_id, 5, :]
+            #     correct_pred[14, :] = pred_array[data_id, 6, :]
+            #     correct_pred[15, :] = pred_array[data_id, 7, :]
+            #     correct_pred[16, :] = pred_array[data_id, 8, :]
+            #     pred_array[data_id, :, :] = correct_pred
+            #     del correct_pred
+            #     print('!!!!!!!!guided_head!!!!!!!PCK_thresh={};data_id={}'.format(PCK_thresh,
+            #                                                                                   data_id))
 
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
@@ -1044,10 +1046,10 @@ def PCK_plot(checkpoint_name, eval_dataset):
             total_correct_data += sum(_norms < PCK_thresh)
             total_counted_data += _norms.shape[0]
 
-            # for debug: sho names of wrong frames
-            if PCK_thresh == np.linspace(0, 30, 60)[30]:
-                if sum(_norms > PCK_thresh)>4:
-                    print('***large error***PCK_thresh={};pred_names[data_id]={};_norms={}'.format(PCK_thresh,pred_names[data_id][-7:],_norms))
+            # # for debug: sho names of wrong frames
+            # if PCK_thresh == np.linspace(0, 30, 60)[30]:
+            #     if sum(_norms > PCK_thresh)>4:
+            #         print('***large error***PCK_thresh={};pred_names[data_id]={};_norms={}'.format(PCK_thresh,pred_names[data_id][-7:],_norms))
 
             # # modified definition: count failures
             # total_counted_data += sum(bool_gt_acceptable_data)
@@ -1556,16 +1558,18 @@ if __name__ == '__main__':
     # checkpoint_name = 'test_on_freihand/shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
     # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
 
-    # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022'
+    # checkpoint_name = 'test_on_freihand/shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
+    # checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch040_guided_head'
+    checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch014'
     # checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
-    checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022_guided_head'
+    # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022_guided_head'
     eval_dataset = 'ALL'
 
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
     # freihand_multi_predict(checkpoint_name, eval_dataset)
     # rhd_multi_predict(checkpoint_name, eval_dataset)
 
-    # posedataset_multi_predict(checkpoint_name, eval_dataset)
+    posedataset_multi_predict(checkpoint_name, eval_dataset)
 
     PCK_plot(checkpoint_name, eval_dataset)
 
