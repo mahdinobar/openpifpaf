@@ -621,23 +621,31 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
         self.mode = mode
         self.number_unique_imgs = db_size('training')
-        # self.number_unique_imgs = 5
-        if self.mode == 'evaluation':
-            self.number_version = 1
-        else:
-            raise AssertionError('number_version not defined!')
 
+        if self.mode == 'training':
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_train.npy')
+        elif self.mode == 'evaluation':
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_eval.npy')
+        elif self.mode == 'test':
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_test.npy')
 
     def __getitem__(self, index):
-        if self.mode == 'evaluation':
+        if index%4 == 0:
+            version = sample_version.gs # green background
+        elif index % 4 == 1:
+            version = sample_version.hom
+        elif index % 4 == 2:
+            version = sample_version.sample
+        elif index % 4 == 3:
             version = sample_version.auto
         else:
-            raise AssertionError ('version not defined!')
+            raise AssertionError('index out of allowed range!')
+
         # load image and mask
-        img = read_img(index%self.number_unique_imgs, self.image_dir, 'training', version)
+        img = read_img(self.data_names_id[index%self.data_names_id.size], self.image_dir, 'training', version)
 
         # annotation for this frame
-        K, xyz = self.K_list[index%self.number_unique_imgs], self.xyz_list[index%self.number_unique_imgs]
+        K, xyz = self.K_list[self.data_names_id[index%self.data_names_id.size]], self.xyz_list[self.data_names_id[index%self.data_names_id.size]]
         K, xyz = [np.array(x) for x in [K, xyz]]
         uv = projectPoints(xyz, K) # 2D gt keypoints
         meta = None
@@ -724,7 +732,7 @@ class ImageList_Freihand(torch.utils.data.Dataset):
         return img, anns, meta
 
     def __len__(self):
-        return self.number_unique_imgs*self.number_version
+        return self.data_names_id.size*4
 
 
 

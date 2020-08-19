@@ -18,17 +18,32 @@ class Freihand(torch.utils.data.Dataset):
 
     def __init__(self, *, image_dir, mode, target_transforms, preprocess):
         """
-        mode = 'training' or 'evaluation'
+        mode = 'training' or 'evaluation' or 'test'
         """
 
         self.K_list, self.xyz_list = load_db_annotation(image_dir, 'training')
         self.image_dir = image_dir
         self.mode = mode
         self.number_unique_imgs = db_size('training')
+
         if self.mode == 'training':
-            self.number_version = 3
+            # rand_id = np.random.randint(0,self.number_unique_imgs,self.number_unique_imgs)
+            # self.data_names_id = rand_id[:int(rand_id.size*0.80)]
+            # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_train.npy',self.data_names_id)
+            # self.data_names = np.random.choice(self.number_unique_imgs, int(self.number_unique_imgs * 0.80),
+            #                                    replace=False)
+            # self.data_names_id = rand_id[int(rand_id.size*0.80):int(rand_id.size*0.90)]
+            # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_eval.npy', self.data_names_id)
+            #
+            # self.data_names_id = rand_id[int(rand_id.size * 0.90):]
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_train.npy')
+
         elif self.mode == 'evaluation':
-            self.number_version = 1
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_eval.npy')
+
+
+        elif self.mode == 'test':
+            self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_test.npy')
 
         self.target_transforms = target_transforms
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
@@ -36,25 +51,22 @@ class Freihand(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         # print('********** __getitem__ index now is = ', index)
-        if self.mode == 'training':
-            if index//self.number_unique_imgs == 0:
-                version = sample_version.gs # green background
-            elif index // self.number_unique_imgs == 1:
-                version = sample_version.hom
-            elif index // self.number_unique_imgs == 2:
-                version = sample_version.sample
-            else:
-                raise AssertionError('index out of allowed range!')
-        elif self.mode == 'evaluation':
+        if index%4 == 0:
+            version = sample_version.gs # green background
+        elif index % 4 == 1:
+            version = sample_version.hom
+        elif index % 4 == 2:
+            version = sample_version.sample
+        elif index % 4 == 3:
             version = sample_version.auto
         else:
-            raise AssertionError('mode not defined!')
+            raise AssertionError('index out of allowed range!')
 
         # load image and mask
-        img = read_img(index%self.number_unique_imgs, self.image_dir, 'training', version)
+        img = read_img(self.data_names_id[index%self.data_names_id.size], self.image_dir, 'training', version)
 
         # annotation for this frame
-        K, xyz = self.K_list[index%self.number_unique_imgs], self.xyz_list[index%self.number_unique_imgs]
+        K, xyz = self.K_list[self.data_names_id[index%self.data_names_id.size]], self.xyz_list[self.data_names_id[index%self.data_names_id.size]]
         K, xyz = [np.array(x) for x in [K, xyz]]
         uv = projectPoints(xyz, K) # 2D gt keypoints
         meta = None
@@ -88,4 +100,4 @@ class Freihand(torch.utils.data.Dataset):
         return img, anns, meta
 
     def __len__(self):
-        return self.number_unique_imgs*self.number_version
+        return self.data_names_id.size*4

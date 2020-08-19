@@ -11,8 +11,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-# # uncomment for server
-# matplotlib.use('Agg')
+# uncomment for server
+matplotlib.use('Agg')
 import copy
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
@@ -166,7 +166,7 @@ def freihand_multi_predict(checkpoint_name, eval_dataset):
     preprocess = preprocess_factory(args)
 
     # data
-    data = datasets.ImageList_Freihand(args.images[0], mode='evaluation', preprocess=preprocess)
+    data = datasets.ImageList_Freihand(args.images[0], mode='test', preprocess=preprocess)
     data_loader = torch.utils.data.DataLoader(
         data, batch_size=args.batch_size, shuffle=False,
         pin_memory=args.pin_memory, num_workers=args.loader_workers,
@@ -1164,7 +1164,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK.png'.format(eval_dataset,
                                                                                                         checkpoint_name),
         format='png')
-    plt.show()
+    # plt.show()
 
     fig2, axes2 = plt.subplots(nrows=1, ncols=1, figsize=(12, 8))
     axes2.plot(PCK_thresh, y_joints[0, :], label='{}'.format(FREIHAND_KEYPOINTS[0]), c='k')
@@ -1182,7 +1182,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     axes2.set_xlim([0, max_error])
     plt.savefig('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_joints.png'.format(
         eval_dataset, checkpoint_name), format='png')
-    plt.show()
+    # plt.show()
     print('PCK_plot Successfully Ended!')
 
 
@@ -1452,8 +1452,8 @@ def pose_dataset_multi_predict_google():
     google_annot_array = []
     google_annot_names = []
     index_fail_google_annotation = []
-    total_raw_frames = 10697
-    for index in range(31792, 31792+total_raw_frames):
+    total_raw_frames = 5118
+    for index in range(42489, 42489+total_raw_frames):
     # total_raw_frames = 4
     # for index in range(3000, 3004):
         try:
@@ -1558,20 +1558,20 @@ if __name__ == '__main__':
     # checkpoint_name = 'test_on_freihand/shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
     # checkpoint_name = 'shufflenetv2k16w-200809-021328-cif-caf-caf25-edge200-o10s.pkl.epoch263'
 
-    # checkpoint_name = 'test_on_freihand/shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
+    # checkpoint_name = 'test_on_correct_freihand/shufflenetv2k16w-200731-220146-cif-caf-caf25-edge200-o10.pkl.epoch212'
     # checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch040_guided_head'
-    checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch014'
+    # checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch014'
     # checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
     # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022_guided_head'
-    eval_dataset = 'ALL'
+    # eval_dataset = 'rhd'
 
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
     # freihand_multi_predict(checkpoint_name, eval_dataset)
     # rhd_multi_predict(checkpoint_name, eval_dataset)
 
-    posedataset_multi_predict(checkpoint_name, eval_dataset)
+    # posedataset_multi_predict(checkpoint_name, eval_dataset)
 
-    PCK_plot(checkpoint_name, eval_dataset)
+    # PCK_plot(checkpoint_name, eval_dataset)
 
     # PCK_normalized_plot(checkpoint_name, eval_dataset)
 
@@ -1579,7 +1579,7 @@ if __name__ == '__main__':
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
-    # pose_dataset_multi_predict_google()
+    pose_dataset_multi_predict_google()
     # pose_dataset_multi_predict_google_confirmation()
 
 

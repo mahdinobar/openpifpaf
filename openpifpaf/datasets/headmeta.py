@@ -77,14 +77,14 @@ def factory(head_names):
     # return [factory_single(hn) for hn in head_names]
     # # uncomment for freihand dataset
     # return [factory_single_freihand(hn) for hn in head_names]
-    # # uncomment for rhd dataset
-    # return [factory_single_rhd(hn) for hn in head_names]
+    # uncomment for rhd dataset
+    return [factory_single_rhd(hn) for hn in head_names]
     # # uncomment for onehand10k dataset
     # return [factory_single_onehand10k(hn) for hn in head_names]
     # # uncomment for nyu dataset
     # return [factory_single_nyu(hn) for hn in head_names]
-    # uncomment for posedataset dataset
-    return [factory_single_posedataset(hn) for hn in head_names]
+    # # uncomment for posedataset dataset
+    # return [factory_single_posedataset(hn) for hn in head_names]
     # # uncomment for panoptic dataset
     # return [factory_single_panoptic(hn) for hn in head_names]
 
