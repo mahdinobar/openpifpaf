@@ -29,9 +29,14 @@ class Posedataset(torch.utils.data.Dataset):
         _all_names = np.load('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir))
         _all_annots = np.load('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir))
 
+        # _all_names_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_names.npy')
+        # _all_annots_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_array.npy')
+        # ALL_names = np.concatenate((_all_names, _all_names_2))
+        # ALL_annotss = np.concatenate((_all_annots, _all_annots_2))
+        # np.save('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir), ALL_names)
+        # np.save('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir), ALL_annotss)
         # array_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_array.npy')
         # names_2 = np.load('/home/mahdi/HVR/hvr/data/iPad/2_pose_dataset/annotations/google_annot_names.npy')
-        #
         # np.save('{}/annotations/all_annoted_frames_names.npy'.format(self.image_dir), np.hstack((_all_names, names_2)))
         # np.save('{}/annotations/all_annoted_frames_annot.npy'.format(self.image_dir), np.concatenate((_all_annots, array_2)))
 
@@ -94,6 +99,23 @@ class Posedataset(torch.utils.data.Dataset):
                 _all_annots =  np.delete(_all_annots, arg_wrong, 0)
 
 
+
+
+        # remove repeated frames 5 Tom's freinds
+        _wrong_names = np.genfromtxt('{}/annotations/wrong_correct_pose_dataset_5.csv'.format(self.image_dir), delimiter=',')[1:].astype(int)
+        _wrong_names_str = []
+        for w in range(0, _wrong_names.__len__()):
+            _wrong_names_str.append("{:07}".format(_wrong_names[w]))
+
+        _wrong_names_str = np.asarray(_wrong_names_str)
+
+        for ww in range(0, _wrong_names.__len__()):
+            arg_wrong = np.argwhere(_all_names == _wrong_names_str[ww])
+            if arg_wrong!=0:
+                _all_names = np.delete(_all_names, arg_wrong, 0)
+                _all_annots =  np.delete(_all_annots, arg_wrong, 0)
+
+
         # random split data
         # from sklearn.model_selection import train_test_split
         # annots_train, annots_test, names_train, names_test = train_test_split(_all_annots, _all_names, test_size = 0.20, shuffle=True)
@@ -134,12 +156,14 @@ class Posedataset(torch.utils.data.Dataset):
             number_random_select_2 = 2500
             selected_id_2=np.random.choice(np.arange(np.argwhere(_all_names == '0031792')[0][0], np.argwhere(_all_names == '0036293')[0][0]), number_random_select_2, replace=False)
 
-            self.all_names = np.concatenate((_all_names[selected_id],
-                                             _all_names[selected_id_2]))
-            self.all_annots = np.concatenate((_all_annots[selected_id], _all_annots[selected_id_2]))
+            self.all_names = np.concatenate((_all_names[selected_id],_all_names[selected_id_2], _all_names[np.argwhere(_all_names == '0042489')[0][0]:]))
 
+            self.all_annots = np.concatenate((_all_annots[selected_id], _all_annots[selected_id_2], _all_annots[np.argwhere(_all_names == '0042489')[0][0]:]))
 
         elif self.mode=='evaluation':
+            '''
+            Target dataset (2D annotated width validation dataset)
+            '''
             # self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:]
             self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:np.argwhere(_all_names == '0031792')[0][0]]
             # self.all_annots = _all_annots[np.argwhere(_all_names == '0025791')[0][0]:, :, :]
