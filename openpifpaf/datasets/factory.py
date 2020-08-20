@@ -78,6 +78,8 @@ def train_cli(parser):
     group.add_argument('--rhd-train-image-dir', default=RHD_IMAGE_DIR_TRAIN)
     group.add_argument('--onehand10k-train-image-dir', default=ONEHAND10K_IMAGE_DIR_TRAIN)
     group.add_argument('--nyu-train-image-dir', default=NYU_IMAGE_DIR_TRAIN)
+    group_aug.add_argument('--even-dataset-fusion', default=False, action='store_true',
+                           help='if called it makes equal number of data for all fused Train sets for the ALL dataset fusion')
 
 
     group.add_argument('--concatenate-with-dataset', default=None, nargs='+',
@@ -482,7 +484,7 @@ def train_freihand_factory(args, target_transforms):
         args.loader_workers = args.batch_size
 
     train_data = Freihand(image_dir=args.freihand_train_image_dir, mode='training', preprocess=preprocess,
-        target_transforms=target_transforms)
+        target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
 
     if args.duplicate_data:
         train_data = torch.utils.data.ConcatDataset(
@@ -518,7 +520,7 @@ def train_panoptic_factory(args, target_transforms):
         args.loader_workers = args.batch_size
 
     train_data = Panoptic(image_dir=args.panoptic_train_image_dir, mode='training', preprocess=preprocess,
-        target_transforms=target_transforms)
+        target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
 
     if args.duplicate_data:
         train_data = torch.utils.data.ConcatDataset(
@@ -561,18 +563,18 @@ def train_posedataset_factory(args, target_transforms):
         train_data.append(train_data_posedataset)
         if args.concatenate_with_dataset[0]=='rhd':
             train_data_rhd = Rhd(image_dir=args.concatenate_with_dataset_image_dir[0], mode='training', preprocess=preprocess,
-                             target_transforms=target_transforms)
+                             target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
             train_data.append(train_data_rhd)
 
         if args.concatenate_with_dataset[1] == 'freihand':
             train_data_freihand = Freihand(image_dir=args.concatenate_with_dataset_image_dir[1], mode='training', preprocess=preprocess,
-                                  target_transforms=target_transforms)
+                                  target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
             train_data.append(train_data_freihand)
 
         if args.concatenate_with_dataset[2] == 'panoptic':
             train_data_panoptic = Panoptic(image_dir=args.concatenate_with_dataset_image_dir[2], mode='training',
                                  preprocess=preprocess,
-                                 target_transforms=target_transforms)
+                                 target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
             train_data.append(train_data_panoptic)
         train_data = torch.utils.data.ConcatDataset(train_data)
 
@@ -689,7 +691,7 @@ def train_rhd_factory(args, target_transforms):
         args.loader_workers = args.batch_size
 
     train_data = Rhd(image_dir=args.rhd_train_image_dir, mode='training', preprocess=preprocess,
-        target_transforms=target_transforms)
+        target_transforms=target_transforms, even_dataset_fusion=args.even_dataset_fusion)
 
     if args.duplicate_data:
         train_data = torch.utils.data.ConcatDataset(

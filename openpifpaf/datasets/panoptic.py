@@ -22,7 +22,7 @@ class Panoptic(torch.utils.data.Dataset):
         Panoptic Dataset
     """
 
-    def __init__(self, *, image_dir, mode, target_transforms, preprocess):
+    def __init__(self, *, image_dir, mode, target_transforms, preprocess, even_dataset_fusion=False):
         """
         mode = 'training' or 'evaluation' or 'test'
         """
@@ -36,6 +36,14 @@ class Panoptic(torch.utils.data.Dataset):
                 '{}/names_train.npy'.format(self.image_dir))
             self.all_annots = np.load(
                 '{}/annots_train.npy'.format(self.image_dir))
+
+            if even_dataset_fusion == True:
+                # uncomment to make equal train data number with posedataset for fusion
+                number_random_select = 11058
+                selected_id=np.random.choice(self.all_names.size, number_random_select, replace=False)
+                self.all_names = self.all_names[selected_id]
+                self.all_annots = self.all_annots[selected_id, :, :]
+
         elif self.mode == 'evaluation':
             self.all_names = np.load(
                 '{}/names_val.npy'.format(self.image_dir))

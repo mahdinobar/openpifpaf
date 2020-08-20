@@ -22,7 +22,7 @@ class Rhd(torch.utils.data.Dataset):
         RHD Dataset
     """
 
-    def __init__(self, *, image_dir, mode, target_transforms, preprocess):
+    def __init__(self, *, image_dir, mode, target_transforms, preprocess, even_dataset_fusion=False):
         """
         mode = 'training' or 'evaluation'
         """
@@ -33,6 +33,15 @@ class Rhd(torch.utils.data.Dataset):
         # load all annotations of this mode
         with open(os.path.join(self.image_dir, self.mode, 'anno_%s.pickle' % self.mode), 'rb') as fi:
             self.anno_all = pickle.load(fi)
+
+        if even_dataset_fusion == True and self.mode=='training':
+            # uncomment to make equal train data number with posedataset for fusion
+            _all_anns = self.anno_all
+            self.anno_all = {}
+            number_random_select = 11058
+            selected_id = np.random.choice(_all_anns.__len__(), number_random_select, replace=False)
+            for k, id in enumerate(selected_id):
+                self.anno_all[k] = _all_anns[id]
 
 
     def __getitem__(self, index):

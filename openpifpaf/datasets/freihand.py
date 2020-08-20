@@ -16,7 +16,7 @@ class Freihand(torch.utils.data.Dataset):
         Freihand Dataset
     """
 
-    def __init__(self, *, image_dir, mode, target_transforms, preprocess):
+    def __init__(self, *, image_dir, mode, target_transforms, preprocess, even_dataset_fusion=False):
         """
         mode = 'training' or 'evaluation' or 'test'
         """
@@ -36,7 +36,14 @@ class Freihand(torch.utils.data.Dataset):
             # np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_eval.npy', self.data_names_id)
             #
             # self.data_names_id = rand_id[int(rand_id.size * 0.90):]
+
             self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_train.npy')
+
+            if even_dataset_fusion == True:
+                # uncomment to make equal train data number with posedataset for fusion
+                number_random_select = 2765
+                selected_id=np.random.choice(self.data_names_id.size, number_random_select, replace=False)
+                self.data_names_id = self.data_names_id[selected_id]
 
         elif self.mode == 'evaluation':
             self.data_names_id = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/data_names_eval.npy')
