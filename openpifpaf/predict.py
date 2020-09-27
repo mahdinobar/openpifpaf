@@ -170,9 +170,13 @@ def main():
         linewidth=args.line_width,
     )
     annotation_painter = show.AnnotationPainter(keypoint_painter=keypoint_painter)
-
+    pred_time=[]
     for batch_i, (image_tensors_batch, _anns, meta_batch) in enumerate(data_loader):
+        import time
+        start_time = time.perf_counter()
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
+        end_time = time.perf_counter()
+        pred_time.append(end_time-start_time)
 
         # unbatch
         for pred, meta in zip(pred_batch, meta_batch):
@@ -256,6 +260,7 @@ def main():
                                        fig_width=args.figure_width,
                                        dpi_factor=args.dpi_factor) as ax:
                     annotation_painter.annotations(ax, pred)
+    print('average prediction time = {}s for {} images'.format(np.average(pred_time), pred_time.__len__()))
 
 
 if __name__ == '__main__':
@@ -342,3 +347,25 @@ if __name__ == '__main__':
 # /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_13_D_1_Right_N_85
 # /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_14_D_1_Right_N_85
 # /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_15_D_1_Right_N_85
+
+
+# /home/mahdi/HVR/hvr/data/iPad/set_12/RGB_S_2_D_1_Left_N_16
+# --image-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/ALL/shufflenetv2k16w-200822-181106-cif-caf-caf25-edge200-o50s.pkl.epoch147_guided_head
+# --checkpoint=/home/mahdi/HVR/git_repos/openpifpaf/outputs/shufflenetv2k16w-200822-181106-cif-caf-caf25-edge200-o50s.pkl.epoch147
+# --debug
+# --loader-workers=0
+# --dpi-factor=5
+# --debug-images
+# --debug-indices
+# cif:14
+# caf:14
+
+
+# --checkpoint
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/outputs/resnet101-200921-010117-cif-caf-caf25-edge200-o50s.pkl.epoch400
+# --glob
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/Freihand_pub_v2/evaluation/rgb/000000*
+# --image-output
+# /home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/tmp/
+# --debug

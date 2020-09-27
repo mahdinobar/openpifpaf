@@ -10,9 +10,10 @@ import PIL
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
-# uncomment for server
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Qt4Agg')
+# # uncomment for server
+# matplotlib.use('Agg')
 import copy
 
 from . import datasets, decoder, network, show, transforms, visualizer, __version__
@@ -240,6 +241,7 @@ def panoptic_multi_predict(checkpoint_name, eval_dataset):
     b = 0
     pred_array = []
     gt_array = []
+    pred_names = []
 
     for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
@@ -328,11 +330,14 @@ def panoptic_multi_predict(checkpoint_name, eval_dataset):
                 if pred[0].data.shape==(21,3) and gt[0]['keypoints'].shape==(21,3):
                     pred_array.append(pred[0].data)
                     gt_array.append(gt[0]['keypoints'])
+                    pred_names.append(meta['file_name'])
             except:
                 pass
 
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_array.npy'.format(eval_dataset, checkpoint_name), pred_array)
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset, checkpoint_name), gt_array)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(eval_dataset, checkpoint_name), pred_names)
+
 
 
 
@@ -360,6 +365,8 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
     hvr_pred_array = []
     hvr_name_array = []
     error_counter = 0
+    guide_counter= 0
+    pred_score_thresh = 0.15
     for batch_i, (image_tensors_batch, gt_batch, meta_batch) in enumerate(data_loader):
         pred_batch = processor.batch(model, image_tensors_batch, device=args.device)
 
@@ -368,10 +375,10 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
             b += 1
             try:
                 # # print('b={}'.format(b))
-                # percent_completed=b/data.__len__()*100
-                # print('progress = {:.2f}'.format(percent_completed))
+                percent_completed=b/data.__len__()*100
+                print('progress = {:.2f}'.format(percent_completed))
                 # bar.next()
-                LOG.info('batch %d: %s', batch_i, meta['file_name'])
+                # LOG.info('batch %d: %s', batch_i, meta['file_name'])
 
                 # load the original image if necessary
                 cpu_image = None
@@ -385,35 +392,38 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
 
                 pred_hvr = np.copy(pred[0].data)
 
+                # guided head
+                # exchange thumb and index with little and ring if thumb_mcp is further than little_mcp to the palm
+                if all([pred_hvr.shape[1] == 21, pred_hvr[0, 2] > pred_score_thresh,
+                        pred_hvr[1, 2] > pred_score_thresh, pred_hvr[17, 2] > pred_score_thresh,
+                        np.linalg.norm(pred_hvr[0, :2] - pred_hvr[17, :2],
+                                       axis=0) < np.linalg.norm(pred_hvr[0, :2] - pred_hvr[1, :2],
+                                                                axis=0)]):
+                    correct_pred = np.zeros_like(pred_hvr[:, :])
+
+                    correct_pred[1, :] = pred_hvr[17, :]
+                    correct_pred[2, :] = pred_hvr[18, :]
+                    correct_pred[3, :] = pred_hvr[19, :]
+                    correct_pred[4, :] = pred_hvr[20, :]
+                    correct_pred[17, :] = pred_hvr[1, :]
+                    correct_pred[18, :] = pred_hvr[2, :]
+                    correct_pred[19, :] = pred_hvr[3, :]
+                    correct_pred[20, :] = pred_hvr[4, :]
+                    correct_pred[5, :] = pred_hvr[13, :]
+                    correct_pred[6, :] = pred_hvr[14, :]
+                    correct_pred[7, :] = pred_hvr[15, :]
+                    correct_pred[8, :] = pred_hvr[16, :]
+                    correct_pred[13, :] = pred_hvr[5, :]
+                    correct_pred[14, :] = pred_hvr[6, :]
+                    correct_pred[15, :] = pred_hvr[7, :]
+                    correct_pred[16, :] = pred_hvr[8, :]
+                    pred_hvr[:, :] = correct_pred
+                    del correct_pred
+                    print('!!!!!!!!guided_head!!!!!!!meta[file_name]={}'.format(meta['file_name']))
+                    guide_counter += 1
+                    print('number of estimation that guided is =', guide_counter)
 
 
-                # # rescale image
-                # order = 1  # order of resize interpolation; 1 means linear interpolation
-                # w, h = img.size
-                # # keep aspect ratio the same
-                # reference_edge = 224
-                # target_max_edge = reference_edge
-                # max_edge = max(h, w)
-                # ratio_factor = target_max_edge / max_edge
-                # target_h = int(ratio_factor * h)
-                # target_w = int(ratio_factor * w)
-                # im_np = np.asarray(img)
-                # im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-                # img = PIL.Image.fromarray(im_np)
-                # assert img.size[0] == target_w
-                # assert img.size[1] == target_h
-                # # pad frames
-                # img = np.asarray(img)
-                # pad_up = (reference_edge - img.shape[0]) // 2
-                # pad_down = (reference_edge - img.shape[0]) // 2
-                # pad_left = (reference_edge - img.shape[1]) // 2
-                # pad_right = (reference_edge - img.shape[1]) // 2
-                # img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-
-                # import matplotlib.pyplot as plt
-                # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
-                # ax.imshow(np.asarray(cpu_image))
-                # ax.set_title(meta['file_name'])
                 # rescale back keypoints
                 w=640
                 h=480
@@ -421,30 +431,21 @@ def posedataset_multi_predict_hvr(checkpoint_name, eval_dataset):
                 h_t=int(480*224/640)
                 x_scale = (w_t) / (w)
                 y_scale = (h_t) / (h)
-
                 pred_hvr[:, 0]=pred_hvr[:, 0]/x_scale
                 pred_hvr[:, 1]=pred_hvr[:, 1]/y_scale
-
                 pad_up = (640 - h) // 2
-                # pad_down = (reference_edge - img.shape[0]) // 2
                 pad_left = (640 - w) // 2
-                # pad_right = (reference_edge - img.shape[1]) // 2
-                # img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-                # img = Image.fromarray(img.astype('uint8'), 'RGB')
-                # for ann in anns:
-                #     modify for pad
-                    # ann['keypoints'][:, 0] = ann['keypoints'][:, 0] + pad_left
-                    # ann['keypoints'][:, 1] = ann['keypoints'][:, 1] + pad_up
-                # pred_hvr[:, 0]=pred_hvr[:, 0]-pad_left
-                # pred_hvr[:, 1]=pred_hvr[:, 1]-pad_up
-                #
+                pred_hvr[:, 0]=pred_hvr[:, 0]-pad_left
+                pred_hvr[:, 1]=pred_hvr[:, 1]-pad_up
+
+                # import matplotlib.pyplot as plt
+                # fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+                # ax.imshow(np.asarray(cpu_image))
                 # ax.plot(pred_hvr[:, 0], pred_hvr[:, 1], 'ro')
-                # ax.plot(pred_hvr[14, 0], pred_hvr[14, 1], 'bx')
-                # ax.plot(pred_hvr[13, 0], pred_hvr[13, 1], 'gx')
-                #
+                # ax.plot(pred_hvr[14, 0], pred_hvr[14, 1], 'bo')
+                # ax.plot(pred_hvr[13, 0], pred_hvr[13, 1], 'go')
                 # plt.show()
 
-                # error = pred[0].data - gt[0]['keypoints']
 
                 if pred_hvr.shape==(21,3):
                     hvr_pred_array.append(pred_hvr)
@@ -916,6 +917,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
+
     # pred_names = np.load(
     #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(
     #         eval_dataset, checkpoint_name))
@@ -953,6 +955,8 @@ def PCK_plot(checkpoint_name, eval_dataset):
         total_correct_data_fingers = np.zeros(21)
 
         correction_factor = 1 # (320 / 224) for rhd_resize
+        guide_counter = 0
+        norms = []
         for data_id in range(0, pred_array.shape[0]):
 
             # # guided head
@@ -983,6 +987,8 @@ def PCK_plot(checkpoint_name, eval_dataset):
             #     del correct_pred
             #     print('!!!!!!!!guided_head!!!!!!!PCK_thresh={};data_id={}'.format(PCK_thresh,
             #                                                                                   data_id))
+            #     guide_counter += 1
+            #     print('number of estimation that guided is =', guide_counter )
 
             # print(index_array[data_id])
             # bool_gt_acceptable_data = (gt_array[data_id, :, 2] > gt_conf_thresh)
@@ -990,6 +996,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
                         gt_array[data_id, :, 2] > gt_conf_thresh)
             _errors = pred_array[data_id, bool_acceptable_data, :2] - gt_array[data_id, bool_acceptable_data, :2]
             _norms = np.linalg.norm(_errors, axis=1)*correction_factor
+            norms.append(_norms)
 
 # # ---------------------------------------------------------------------------
 #             with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/RHD_published_v2/evaluation/color/%.5d.png' %
@@ -1058,7 +1065,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
         PCK_value_fingers = total_correct_data_fingers / total_counted_data_fingers
 
-        return PCK_value, PCK_value_fingers
+        return PCK_value, PCK_value_fingers, norms
 
     num_intervals = 60
     max_error = 30
@@ -1067,12 +1074,26 @@ def PCK_plot(checkpoint_name, eval_dataset):
 
     y = []
     y_joints = np.zeros((21, num_intervals))
+    pxl_errors = []
     for iter in range(0, num_intervals):
-        PCK_value, PCK_value_fingers = PCK(PCK_thresh[iter])
+        PCK_value, PCK_value_fingers, pxl_errors = PCK(PCK_thresh[iter])
         y_joints[:, iter] = PCK_value_fingers
         y.append(PCK_value)
+        # pxl_errors.append(pxl_error)
+        np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pxl_errors.npy'.format(
+            eval_dataset, checkpoint_name), pxl_errors)
         print('PCK_thresh[iter] = {:.2f}: PCK_value = {:.2f}; progress = {:.2f} %'.format(PCK_thresh[iter], PCK_value,
                                                                                           iter / num_intervals * 100))
+
+        # uncomment for mean and median errors
+        pxl_errors = np.load(
+            '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pxl_errors.npy'.format(
+                eval_dataset, checkpoint_name), allow_pickle=True)
+        pxl_error = np.array([])
+        for k in range(0, pxl_errors.size):
+            pxl_error = np.append(pxl_error, pxl_errors[k])
+        print('++++++++++++++++++ mean error = {} ++++++++++++++++++'.format(np.mean(pxl_error)))
+        print('++++++++++++++++++ median error = {} ++++++++++++++++++'.format(np.median(pxl_error)))
 
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCKvsPXLs.npy'.format(
         eval_dataset, checkpoint_name), np.vstack((PCK_thresh, np.asarray(y))))
@@ -1083,6 +1104,8 @@ def PCK_plot(checkpoint_name, eval_dataset):
     np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
                                                                                                         checkpoint_name),
             y)
+    np.save('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pxl_errors.npy'.format(
+        eval_dataset, checkpoint_name), pxl_errors)
 
     # y_joints = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/2DPCK_fingers.npy'.format(
     #     eval_dataset, checkpoint_name))
@@ -1090,6 +1113,7 @@ def PCK_plot(checkpoint_name, eval_dataset):
     #     eval_dataset, checkpoint_name))
     # y = np.load('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/y.npy'.format(eval_dataset,
     #                                                                                                     checkpoint_name))
+
 
     # attention_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/attention_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
@@ -1193,6 +1217,9 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     gt_array = np.load(
         '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/gt_array.npy'.format(eval_dataset,
                                                                                                            checkpoint_name))
+    pred_names = np.load(
+        '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/pred_names.npy'.format(eval_dataset,
+                                                                                                           checkpoint_name))
     # index_array = np.load(
     #     '/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/{}/index_array.npy'.format(eval_dataset,
     #                                                                                                        checkpoint_name))
@@ -1226,7 +1253,7 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
         total_correct_data = 0
         total_counted_data_fingers = np.zeros(21)
         total_correct_data_fingers = np.zeros(21)
-        bbx_factor=2.2
+        bbx_factor=1.
         for data_id in range(0, pred_array.shape[0]):
             tightest_edge_bbox = bbx_factor*max(abs(max(gt_array[data_id, :, 0])-min(gt_array[data_id, :, 0])), abs(max(gt_array[data_id, :, 1])-min(gt_array[data_id, :, 1])))
             # print(index_array[data_id])
@@ -1237,46 +1264,46 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
             _norms = np.linalg.norm(_errors, axis=1)
 
 # # ---------------------------------------------------------------------------
-#             with open('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/RHD_published_v2/evaluation/color/%.5d.png' %
-#                       index_array[data_id], 'rb') as f:
-#                 cpu_image = PIL.Image.open(f).convert('RGB')
-#                 # uncomment for rhd
-#                 img = cpu_image
-#                 # rescale image
-#                 order = 1  # order of resize interpolation; 1 means linear interpolation
-#                 w, h = img.size
-#                 # keep aspect ratio the same
-#                 reference_edge = 224
-#                 target_max_edge = reference_edge
-#                 max_edge = max(h, w)
-#                 ratio_factor = target_max_edge / max_edge
-#                 target_h = int(ratio_factor * h)
-#                 target_w = int(ratio_factor * w)
-#                 im_np = np.asarray(img)
-#                 im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
-#                 img = PIL.Image.fromarray(im_np)
-#                 assert img.size[0] == target_w
-#                 assert img.size[1] == target_h
-#                 # pad frames
-#                 img = np.asarray(img)
-#                 pad_up = (reference_edge - img.shape[0]) // 2
-#                 pad_down = (reference_edge - img.shape[0]) // 2
-#                 pad_left = (reference_edge - img.shape[1]) // 2
-#                 pad_right = (reference_edge - img.shape[1]) // 2
-#                 img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
-#                 import matplotlib.pyplot as plt
-#                 fig, ax = plt.subplots(1, 1, figsize=(12, 12))
-#                 ax.imshow(np.asarray(img))
-#                 ax.plot(gt_array[data_id, :, 0],
-#                         gt_array[data_id, :, 1], 'ro')
-#                 ax.plot(pred_array[data_id, :, 0],
-#                         pred_array[data_id, :, 1], 'bx')
+#             # load image
+#             with open(pred_names[data_id], 'rb') as f:
+#                 img = Image.open(f).convert('RGB')
+#             # rescale image
+#             order = 1  # order of resize interpolation; 1 means linear interpolation
+#             w, h = img.size
+#             # keep aspect ratio the same
+#             reference_edge = 224
+#             target_max_edge = reference_edge
+#             max_edge = max(h, w)
+#             ratio_factor = target_max_edge / max_edge
+#             target_h = int(ratio_factor * h)
+#             target_w = int(ratio_factor * w)
+#             im_np = np.asarray(img)
+#             im_np = scipy.ndimage.zoom(im_np, (target_h / h, target_w / w, 1), order=order)
+#             img = PIL.Image.fromarray(im_np)
+#             LOG.debug('input raw image before resize = (%f, %f), after = %s', w, h, img.size)
+#             assert img.size[0] == target_w
+#             assert img.size[1] == target_h
+#             # pad frames
+#             img = np.asarray(img)
+#             pad_up = (reference_edge - img.shape[0]) // 2
+#             pad_down = (reference_edge - img.shape[0]) // 2
+#             pad_left = (reference_edge - img.shape[1]) // 2
+#             pad_right = (reference_edge - img.shape[1]) // 2
+#             img = np.pad(img, pad_width=((pad_up, pad_down), (pad_left, pad_right), (0, 0)), mode='symmetric')
+#             img = Image.fromarray(img.astype('uint8'), 'RGB')
+#             import matplotlib.pyplot as plt
+#             fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+#             ax.imshow(np.asarray(img))
+#             ax.plot(gt_array[data_id, :, 0],
+#                     gt_array[data_id, :, 1], 'ro')
+#             ax.plot(pred_array[data_id, :, 0],
+#                     pred_array[data_id, :, 1], 'bx')
 #
-#                 for txt in range(0, 21):
-#                     ax.annotate(txt, (gt_array[data_id, txt, 0] - 1, gt_array[data_id, txt, 1] - 1),
-#                                 c='r')
-#                     ax.annotate(txt, (pred_array[data_id, txt, 0] + 1, pred_array[data_id, txt, 1] + 1), c='b')
-#                 plt.show()
+#             for txt in range(0, 21):
+#                 ax.annotate(txt, (gt_array[data_id, txt, 0] - 1, gt_array[data_id, txt, 1] - 1),
+#                             c='r')
+#                 ax.annotate(txt, (pred_array[data_id, txt, 0] + 1, pred_array[data_id, txt, 1] + 1), c='b')
+#             plt.show()
 # # ---------------------------------------------------------------------------
 
             for joint_id in range(0, 21):
@@ -1298,9 +1325,9 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
 
         return PCK_value, PCK_value_fingers
 
-    num_intervals = 40
-    max_error = 0.20
-    PCK_thresh = np.linspace(0.01, max_error, num_intervals)
+    num_intervals = 60
+    max_error = 1
+    PCK_thresh = np.linspace(0.086, max_error, num_intervals)
     # PCK_thresh = np.geomspace(0.5, max_error, num_intervals)
 
     y = []
@@ -1343,10 +1370,10 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     # MobilePose_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/MobilePose_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
     # EfficientDet_paper_2DPCK_PXLs_freihand = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/EfficientDet_network_2DPCKvsPXLs.csv'.format(eval_dataset), delimiter=',')
 
-    AGMN_jointly_fine_tuned = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_jointly_fine_tuned.csv'.format(eval_dataset), delimiter=',')
-    AGMN_separately_trained = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_separately_trained.csv'.format(eval_dataset), delimiter=',')
-    AGMN_with_gt_relative_positions = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_with_gt_relative_positions.csv'.format(eval_dataset), delimiter=',')
-    AGMN_CPM = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_CPM.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_jointly_fine_tuned = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_jointly_fine_tuned.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_separately_trained = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_separately_trained.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_with_gt_relative_positions = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_with_gt_relative_positions.csv'.format(eval_dataset), delimiter=',')
+    # AGMN_CPM = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/AGMN_CPM.csv'.format(eval_dataset), delimiter=',')
     # NSRM_CPM = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_CPM.csv'.format(eval_dataset), delimiter=',')
     # NSRM_LDM_G1 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LDM_G1.csv'.format(eval_dataset), delimiter=',')
     # NSRM_LDM_G1and6 = np.genfromtxt('/home/mahdi/HVR/git_repos/openpifpaf/openpifpaf/results/predict_output/{}/NSRM_LDM_G1and6.csv'.format(eval_dataset), delimiter=',')
@@ -1360,10 +1387,10 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     from sklearn.metrics import auc
     AUC = auc(PCK_thresh, np.asarray(y))/max_error
 
-    AUC_AGMN_jointly_fine_tuned = auc(AGMN_jointly_fine_tuned[:, 0], AGMN_jointly_fine_tuned[:, 1]) / max_error
-    AUCAGMN_separately_trained = auc(AGMN_separately_trained[:, 0], AGMN_separately_trained[:, 1])/max_error
-    AUC_AGMN_with_gt_relative_positions = auc(AGMN_with_gt_relative_positions[:, 0], AGMN_with_gt_relative_positions[:, 1])/max_error
-    AUC_AGMN_CPM = auc(AGMN_CPM[:, 0], AGMN_CPM[:, 1])/max_error
+    # AUC_AGMN_jointly_fine_tuned = auc(AGMN_jointly_fine_tuned[:, 0], AGMN_jointly_fine_tuned[:, 1]) / max_error
+    # AUCAGMN_separately_trained = auc(AGMN_separately_trained[:, 0], AGMN_separately_trained[:, 1])/max_error
+    # AUC_AGMN_with_gt_relative_positions = auc(AGMN_with_gt_relative_positions[:, 0], AGMN_with_gt_relative_positions[:, 1])/max_error
+    # AUC_AGMN_CPM = auc(AGMN_CPM[:, 0], AGMN_CPM[:, 1])/max_error
 
 
     # AUC_NSRM_LDM_G1 = auc(NSRM_LDM_G1[:-1, 0], NSRM_LDM_G1[:-1, 1])/max_error
@@ -1374,10 +1401,10 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
 
     print('handPifpaf AUC of normalized 2PCK is =',AUC)
 
-    print('handPifpaf AUC_AGMN_jointly_fine_tuned of normalized 2PCK is =',AUC_AGMN_jointly_fine_tuned)
-    print('handPifpaf AUCAGMN_separately_trained of normalized 2PCK is =',AUCAGMN_separately_trained)
-    print('handPifpaf AUC_AGMN_with_gt_relative_positions of normalized 2PCK is =',AUC_AGMN_with_gt_relative_positions)
-    print('handPifpaf AUC_AGMN_CPM of normalized 2PCK is =',AUC_AGMN_CPM)
+    # print('handPifpaf AUC_AGMN_jointly_fine_tuned of normalized 2PCK is =',AUC_AGMN_jointly_fine_tuned)
+    # print('handPifpaf AUCAGMN_separately_trained of normalized 2PCK is =',AUCAGMN_separately_trained)
+    # print('handPifpaf AUC_AGMN_with_gt_relative_positions of normalized 2PCK is =',AUC_AGMN_with_gt_relative_positions)
+    # print('handPifpaf AUC_AGMN_CPM of normalized 2PCK is =',AUC_AGMN_CPM)
 
     # print('handPifpaf AUC_NSRM_LDM_G1 of normalized 2PCK is =',AUC_NSRM_LDM_G1)
     # print('handPifpaf AUC_NSRM_LDM_G1and6 of normalized 2PCK is =',AUC_NSRM_LDM_G1and6)
@@ -1394,10 +1421,10 @@ def PCK_normalized_plot(checkpoint_name, eval_dataset):
     # axes.plot(EfficientDet_paper_2DPCK_PXLs_freihand[:, 0], EfficientDet_paper_2DPCK_PXLs_freihand[:, 1], label='EfficientDet224', c='brown')
 
     # panoptic SOA
-    axes.plot(AGMN_jointly_fine_tuned[:, 0], AGMN_jointly_fine_tuned[:, 1], label='jointly_fine_tuned', c='tab:orange')
-    axes.plot(AGMN_separately_trained[:, 0], AGMN_separately_trained[:, 1], label='separately_trained', c='tab:green')
-    axes.plot(AGMN_with_gt_relative_positions[:, 0], AGMN_with_gt_relative_positions[:, 1], label='with_gt_relative_positions', c='tab:red')
-    axes.plot(AGMN_CPM[:, 0], AGMN_CPM[:, 1], label='CPM', c='tab:purple')
+    # axes.plot(AGMN_jointly_fine_tuned[:, 0], AGMN_jointly_fine_tuned[:, 1], label='jointly_fine_tuned', c='tab:orange')
+    # axes.plot(AGMN_separately_trained[:, 0], AGMN_separately_trained[:, 1], label='separately_trained', c='tab:green')
+    # axes.plot(AGMN_with_gt_relative_positions[:, 0], AGMN_with_gt_relative_positions[:, 1], label='with_gt_relative_positions', c='tab:red')
+    # axes.plot(AGMN_CPM[:, 0], AGMN_CPM[:, 1], label='CPM', c='tab:purple')
     # axes.plot(NSRM_CPM[:, 0], NSRM_CPM[:, 1], label='CPM', c='tab:brown')
     # axes.plot(NSRM_LDM_G1[:, 0], NSRM_LDM_G1[:, 1], label='LDM_G1', c='tab:green')
     # axes.plot(NSRM_LDM_G1and6[:, 0], NSRM_LDM_G1and6[:, 1], label='LDM_G1and6', c='black')
@@ -1543,7 +1570,6 @@ if __name__ == '__main__':
     # eval_dataset = 'pose_dataset'
 
 
-    # posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
 
     # checkpoint_name = 'shufflenetv2k16w-200730-095321-cif-caf-caf25-edge200-o10s.pkl.epoch067'
     # checkpoint_name = 'shufflenetv2k16w-200730-200536-cif-caf-caf25-edge200-o10s.pkl.epoch094'
@@ -1563,15 +1589,22 @@ if __name__ == '__main__':
     # checkpoint_name = 'shufflenetv2k16w-200816-140011-cif-caf25-edge200-o50s.pkl.epoch014'
     # checkpoint_name = 'shufflenetv2k16w-200815-173928-cif-caf-edge200-o50s.pkl.epoch036_guided_head'
     # checkpoint_name = 'shufflenetv2k16w-200814-212724-cif-caf-edge200-o10s.pkl.epoch022_guided_head'
-    # eval_dataset = 'rhd'
+    # checkpoint_name = 'test_on_posedataset/shufflenetv2k16w-200818-231450-cif-caf-caf25-edge200-o50s.pkl.epoch200'
+    # checkpoint_name = 'test_on_rhd/shufflenetv2k16w-200824-171455-cif-caf-caf25-edge200-o50s.pkl.epoch265_guided_head'
+    # checkpoint_name = 'shufflenetv2k16w-200822-181106-cif-caf-caf25-edge200-o50s.pkl.epoch147_guided_head'
+    checkpoint_name = 'resnet101-200921-010117-cif-caf-caf25-edge200-o50s.pkl.epoch400'
+    # checkpoint_name = 'shufflenetv2k16w-200824-171455-cif-caf-caf25-edge200-o50s.pkl.epoch265'
+    eval_dataset = 'freihand'
 
     # panoptic_multi_predict(checkpoint_name, eval_dataset)
-    # freihand_multi_predict(checkpoint_name, eval_dataset)
+    freihand_multi_predict(checkpoint_name, eval_dataset)
     # rhd_multi_predict(checkpoint_name, eval_dataset)
-
     # posedataset_multi_predict(checkpoint_name, eval_dataset)
 
-    # PCK_plot(checkpoint_name, eval_dataset)
+    # posedataset_multi_predict_hvr(checkpoint_name, eval_dataset)
+
+
+    PCK_plot(checkpoint_name, eval_dataset)
 
     # PCK_normalized_plot(checkpoint_name, eval_dataset)
 
@@ -1579,7 +1612,7 @@ if __name__ == '__main__':
 
     # freihand_multi_predict_google(checkpoint_name, eval_dataset)
 
-    pose_dataset_multi_predict_google()
+    # pose_dataset_multi_predict_google()
     # pose_dataset_multi_predict_google_confirmation()
 
 

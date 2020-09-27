@@ -185,6 +185,9 @@ class ImageList_PoseDataset_multi(torch.utils.data.Dataset):
 
 
         elif self.mode == 'evaluation':
+            '''
+            Target dataset (2D annotated width validation dataset)
+            '''
             # self.all_names = _all_names[np.argwhere(_all_names == '0025791')[0][0]:]
             self.all_names = _all_names[
                              np.argwhere(_all_names == '0025791')[0][0]:np.argwhere(_all_names == '0031792')[0][0]]
@@ -397,20 +400,20 @@ class ImageList_Panoptic(torch.utils.data.Dataset):
         # ax[0].plot(anns[0]['keypoints'][bool_annotated_joints_1, 0], anns[0]['keypoints'][bool_annotated_joints_1, 1], 'r.')
 
 
-        # crop image
-        max_gt_bbx = max(max(self.all_annots[index, :, 0]) - min(self.all_annots[index, :, 0]), max(self.all_annots[index, :, 1])-min(self.all_annots[index, :, 1]))
-        bbx_factor = 2.2
-        bbx = bbx_factor*max_gt_bbx
-        x_offset = (max(self.all_annots[index, :, 0]) + min(self.all_annots[index, :, 0])) / 2 - bbx/2
-        y_offset = (max(self.all_annots[index, :, 1]) + min(self.all_annots[index, :, 1])) / 2 - bbx/2
-        ltrb = (x_offset, y_offset, x_offset + bbx, y_offset + bbx)
-        img = img.crop(ltrb)
-        # crop keypoints
-        for ann in anns:
-            ann['keypoints'][:, 0] -= x_offset
-            ann['keypoints'][:, 1] -= y_offset
-            ann['bbox'][0] -= x_offset
-            ann['bbox'][1] -= y_offset
+        # # crop image
+        # max_gt_bbx = max(max(self.all_annots[index, :, 0]) - min(self.all_annots[index, :, 0]), max(self.all_annots[index, :, 1])-min(self.all_annots[index, :, 1]))
+        # bbx_factor = 2.2
+        # bbx = bbx_factor*max_gt_bbx
+        # x_offset = (max(self.all_annots[index, :, 0]) + min(self.all_annots[index, :, 0])) / 2 - bbx/2
+        # y_offset = (max(self.all_annots[index, :, 1]) + min(self.all_annots[index, :, 1])) / 2 - bbx/2
+        # ltrb = (x_offset, y_offset, x_offset + bbx, y_offset + bbx)
+        # img = img.crop(ltrb)
+        # # crop keypoints
+        # for ann in anns:
+        #     ann['keypoints'][:, 0] -= x_offset
+        #     ann['keypoints'][:, 1] -= y_offset
+        #     ann['bbox'][0] -= x_offset
+        #     ann['bbox'][1] -= y_offset
 
         # # # TODO uncomment for old trained rhd evaluation
         # # for matching rhd annotation when combining with posedataset/google/freihand/panoptic: this also matches with rhd_constants.py
@@ -548,6 +551,7 @@ class ImageList_PoseDataset_hvr(torch.utils.data.Dataset):
         self.image_paths = image_paths
         self.preprocess = preprocess or transforms.EVAL_TRANSFORM
         self.all_RGB_names=np.load('{}/RGB_names.npy'.format(self.image_paths))
+        # '/home/mahdi/HVR/hvr/data/iPad/set_12/RGB_names.npy''
 
     def __getitem__(self, index):
         image_path = '{}'.format(self.all_RGB_names[index])

@@ -155,7 +155,7 @@ class Plots(object):
             if 'val-epoch' in data:
                 x = np.array([row.get('epoch') for row in data['val-epoch']])
                 y = np.array([row.get('loss') for row in data['val-epoch']], dtype=np.float)
-                ax.plot(x, y, 'o-', color=color, markersize=2, label=label)
+                ax.plot(x, y, 'o-', color='r', markersize=2, label=label)
 
             if 'train-epoch' in data:
                 x = np.array([row.get('epoch') for row in data['train-epoch']])
@@ -186,8 +186,8 @@ class Plots(object):
                 y = np.array([row.get('head_losses')[field_i]
                               for row in data['val-epoch']], dtype=np.float)
                 m = np.logical_not(np.isnan(y))
-                ax.plot(x[m], y[m], 'o-', color=color, markersize=2, label=label)
-                last_five_y.append(y[m][-5:])
+                ax.plot(x[m], y[m], 'o-', color='r', markersize=2, label=label)
+                last_five_y.append(y[m][:])
 
             if 'train-epoch' in data:
                 x = np.array([row.get('epoch') for row in data['train-epoch']])
@@ -195,7 +195,7 @@ class Plots(object):
                               for row in data['train-epoch']], dtype=np.float)
                 m = np.logical_not(np.isnan(y))
                 ax.plot(x[m], y[m], 'x-', color=color, linestyle='dotted', markersize=2)
-                last_five_y.append(y[m][-5:])
+                last_five_y.append(y[m][:])
 
         if not last_five_y:
             return

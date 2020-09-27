@@ -80,20 +80,20 @@ class Panoptic(torch.utils.data.Dataset):
         # bool_annotated_joints_2 = anns[1]['keypoints'][:, 2] == 2
         # ax[0].plot(anns[1]['keypoints'][bool_annotated_joints_2, 0], anns[1]['keypoints'][bool_annotated_joints_2, 1], 'go')
 
-        # crop image
-        max_gt_bbx = max(max(self.all_annots[index, :, 0]) - min(self.all_annots[index, :, 0]), max(self.all_annots[index, :, 1])-min(self.all_annots[index, :, 1]))
-        bbx_factor = 2.2
-        bbx = bbx_factor*max_gt_bbx
-        x_offset = (max(self.all_annots[index, :, 0]) + min(self.all_annots[index, :, 0])) / 2 - bbx/2
-        y_offset = (max(self.all_annots[index, :, 1]) + min(self.all_annots[index, :, 1])) / 2 - bbx/2
-        ltrb = (x_offset, y_offset, x_offset + bbx, y_offset + bbx)
-        img = img.crop(ltrb)
-        # crop keypoints
-        for ann in anns:
-            ann['keypoints'][:, 0] -= x_offset
-            ann['keypoints'][:, 1] -= y_offset
-            ann['bbox'][0] -= x_offset
-            ann['bbox'][1] -= y_offset
+        # # crop image
+        # max_gt_bbx = max(max(self.all_annots[index, :, 0]) - min(self.all_annots[index, :, 0]), max(self.all_annots[index, :, 1])-min(self.all_annots[index, :, 1]))
+        # bbx_factor = 2.2
+        # bbx = bbx_factor*max_gt_bbx
+        # x_offset = (max(self.all_annots[index, :, 0]) + min(self.all_annots[index, :, 0])) / 2 - bbx/2
+        # y_offset = (max(self.all_annots[index, :, 1]) + min(self.all_annots[index, :, 1])) / 2 - bbx/2
+        # ltrb = (x_offset, y_offset, x_offset + bbx, y_offset + bbx)
+        # img = img.crop(ltrb)
+        # # crop keypoints
+        # for ann in anns:
+        #     ann['keypoints'][:, 0] -= x_offset
+        #     ann['keypoints'][:, 1] -= y_offset
+        #     ann['bbox'][0] -= x_offset
+        #     ann['bbox'][1] -= y_offset
 
         # rescale image
         order = 1  # order of resize interpolation; 1 means linear interpolation
